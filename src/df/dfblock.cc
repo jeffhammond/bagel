@@ -322,23 +322,23 @@ shared_ptr<DFBlock> DFBlock::apply_rhf_2RDM(const double scale_exch) const {
 // Caution
 //   o strictly assuming that we are using natural orbitals.
 //
-shared_ptr<DFBlock> DFBlock::apply_uhf_2RDM(const double* amat, const double* bmat) const {
+shared_ptr<DFBlock> DFBlock::apply_uhf_2RDM(std::shared_ptr<const btas::Tensor<double>> amat, std::shared_ptr<const btas::Tensor<double>> bmat) const {
   assert(b1size_ == b2size_);
   const int nocc = b1size_;
   shared_ptr<DFBlock> out = clone();
   {
     unique_ptr<double[]> d2(new double[size()]);
     // exchange contributions
-    dgemm_("N", "N", asize_*nocc, nocc, nocc, 1.0, data(), asize_*nocc, amat, nocc, 0.0, d2.get(), asize_*nocc);
+    dgemm_("N", "N", asize_*nocc, nocc, nocc, 1.0, data(), asize_*nocc, amat->data(), nocc, 0.0, d2.get(), asize_*nocc);
     for (int i = 0; i != nocc; ++i)
-      dgemm_("N", "N", asize_, nocc, nocc, -1.0, d2.get()+asize_*nocc*i, asize_, amat, nocc, 0.0, out->data()+asize_*nocc*i, asize_);
-    dgemm_("N", "N", asize_*nocc, nocc, nocc, 1.0, data(), asize_*nocc, bmat, nocc, 0.0, d2.get(), asize_*nocc);
+      dgemm_("N", "N", asize_, nocc, nocc, -1.0, d2.get()+asize_*nocc*i, asize_, amat->data(), nocc, 0.0, out->data()+asize_*nocc*i, asize_);
+    dgemm_("N", "N", asize_*nocc, nocc, nocc, 1.0, data(), asize_*nocc, bmat->data(), nocc, 0.0, d2.get(), asize_*nocc);
     for (int i = 0; i != nocc; ++i)
-      dgemm_("N", "N", asize_, nocc, nocc, -1.0, d2.get()+asize_*nocc*i, asize_, bmat, nocc, 1.0, out->data()+asize_*nocc*i, asize_);
+      dgemm_("N", "N", asize_, nocc, nocc, -1.0, d2.get()+asize_*nocc*i, asize_, bmat->data(), nocc, 1.0, out->data()+asize_*nocc*i, asize_);
   }
 
   unique_ptr<double[]> sum(new double[nocc]);
-  for (int i = 0; i != nocc; ++i) sum[i] = amat[i+i*nocc] + bmat[i+i*nocc];
+  for (int i = 0; i != nocc; ++i) sum[i] = (*amat)(i,i) + (*bmat)(i,i);
   // coulomb contributions (diagonal to diagonal)
   unique_ptr<double[]> diagsum(new double[asize_]);
   fill_n(diagsum.get(), asize_, 0.0);
@@ -351,13 +351,13 @@ shared_ptr<DFBlock> DFBlock::apply_uhf_2RDM(const double* amat, const double* bm
 
 
 
-shared_ptr<DFBlock> DFBlock::apply_2RDM(const double* rdm, const double* rdm1, const int nclosed, const int nact) const {
+shared_ptr<DFBlock> DFBlock::apply_2RDM(std::shared_ptr<const btas::Tensor<double>> rdm, std::shared_ptr<const btas::Tensor<double>> rdm1, const int nclosed, const int nact) const {
   assert(nclosed+nact == b1size_ && b1size_ == b2size_);
   // checking if natural orbitals...
   {
-    const double a = ddot_(nact*nact, rdm1, 1, rdm1, 1);
+    const double a = ddot_(nact*nact, rdm1->data(), 1, rdm1->data(), 1);
     double sum = 0.0;
-    for (int i = 0; i != nact; ++i) sum += rdm1[i+nact*i]*rdm1[i+nact*i];
+    for (int i = 0; i != nact; ++i) sum += (*rdm1)(i,i)*(*rdm1)(i,i);
     if (fabs(a-sum) > numerical_zero__*100) {
       stringstream ss; ss << "DFFullDist::apply_2rdm should be called with natural orbitals " << scientific << setprecision(3) << fabs(a-sum) - numerical_zero__;
       throw logic_error(ss.str());
@@ -386,7 +386,7 @@ shared_ptr<DFBlock> DFBlock::apply_2RDM(const double* rdm, const double* rdm1, c
     for (int j = 0; j != nact; ++j)
       copy_n(data()+asize_*(j+nclosed+b1size_*(i+nclosed)), asize_, buf.get()+asize_*(j+nact*i));
   // multiply
-  dgemm_("N", "N", asize_, nact*nact, nact*nact, 1.0, buf.get(), asize_, rdm, nact*nact, 0.0, buf2.get(), asize_);
+  dgemm_("N", "N", asize_, nact*nact, nact*nact, 1.0, buf.get(), asize_, rdm->data(), nact*nact, 0.0, buf2.get(), asize_);
   // slot in
   for (int i = 0; i != nact; ++i)
     for (int j = 0; j != nact; ++j)
@@ -396,25 +396,25 @@ shared_ptr<DFBlock> DFBlock::apply_2RDM(const double* rdm, const double* rdm1, c
   // coulomb contribution G^ia_ia = 2*gamma_ab
   // ASSUMING natural orbitals
   for (int i = 0; i != nact; ++i)
-    daxpy_(asize_, 2.0*rdm1[i+nact*i], diagsum.get(), 1, out->data()+asize_*(i+nclosed+b1size_*(i+nclosed)), 1);
+    daxpy_(asize_, 2.0*(*rdm1)(i,i), diagsum.get(), 1, out->data()+asize_*(i+nclosed+b1size_*(i+nclosed)), 1);
   unique_ptr<double[]> diagsum2(new double[asize_]);
-  dgemv_("N", asize_, nact*nact, 1.0, buf.get(), asize_, rdm1, 1, 0.0, diagsum2.get(), 1);
+  dgemv_("N", asize_, nact*nact, 1.0, buf.get(), asize_, rdm1->data(), 1, 0.0, diagsum2.get(), 1);
   for (int i = 0; i != nclosed; ++i)
     daxpy_(asize_, 2.0, diagsum2.get(), 1, out->data()+asize_*(i+b1size_*i), 1);
   // exchange contribution
   for (int i = 0; i != nact; ++i) {
     for (int j = 0; j != nclosed; ++j) {
-      daxpy_(asize_, -rdm1[i+nact*i], data()+asize_*(j+b1size_*(i+nclosed)), 1, out->data()+asize_*(j+b1size_*(i+nclosed)), 1);
-      daxpy_(asize_, -rdm1[i+nact*i], data()+asize_*(i+nclosed+b1size_*j), 1, out->data()+asize_*(i+nclosed+b1size_*j), 1);
+      daxpy_(asize_, -(*rdm1)(i,i), data()+asize_*(j+b1size_*(i+nclosed)), 1, out->data()+asize_*(j+b1size_*(i+nclosed)), 1);
+      daxpy_(asize_, -(*rdm1)(i,i), data()+asize_*(i+nclosed+b1size_*j), 1, out->data()+asize_*(i+nclosed+b1size_*j), 1);
     }
   }
   return out;
 }
 
 
-shared_ptr<DFBlock> DFBlock::apply_2RDM(const double* rdm) const {
+shared_ptr<DFBlock> DFBlock::apply_2RDM(std::shared_ptr<const btas::Tensor<double>> rdm) const {
   shared_ptr<DFBlock> out = clone();
-  dgemm_("N", "T", asize_, b1size_*b2size_, b1size_*b2size_, 1.0, data(), asize_, rdm, b1size_*b2size_, 0.0, out->data(), asize_);
+  dgemm_("N", "T", asize_, b1size_*b2size_, b1size_*b2size_, 1.0, data(), asize_, rdm->data(), b1size_*b2size_, 0.0, out->data(), asize_);
   return out;
 }
 

@@ -115,9 +115,9 @@ class DFBlock : public btas::Tensor<double> {
 
     // 2RDM contractions
     std::shared_ptr<DFBlock> apply_rhf_2RDM(const double scale_exch) const;
-    std::shared_ptr<DFBlock> apply_uhf_2RDM(const double*, const double*) const;
-    std::shared_ptr<DFBlock> apply_2RDM(const double* rdm, const double* rdm1, const int nclosed, const int nact) const;
-    std::shared_ptr<DFBlock> apply_2RDM(const double* rdm) const;
+    std::shared_ptr<DFBlock> apply_uhf_2RDM(std::shared_ptr<const btas::Tensor<double>>, std::shared_ptr<const btas::Tensor<double>>) const;
+    std::shared_ptr<DFBlock> apply_2RDM(std::shared_ptr<const btas::Tensor<double>> rdm, std::shared_ptr<const btas::Tensor<double>> rdm1, const int nclosed, const int nact) const;
+    std::shared_ptr<DFBlock> apply_2RDM(std::shared_ptr<const btas::Tensor<double>> rdm) const;
 
     // Form 2- and 4-index integrals
     std::shared_ptr<Matrix> form_2index(const std::shared_ptr<const DFBlock> o, const double a) const;
@@ -139,10 +139,6 @@ class DFBlock : public btas::Tensor<double> {
     // CAUTION, ist, jst, and kst are absolute number (NOT relative to astart_, ...). Returns double[] whose size is i*j*k
     std::shared_ptr<Matrix> get_block(const int ist, const int i, const int jst, const int j, const int kst, const int k) const;
 
-#if 0
-    // use with caution
-    std::unique_ptr<double[]> release_data() { return std::move(data_); }
-#endif
 };
 
 }

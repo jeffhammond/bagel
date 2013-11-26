@@ -39,26 +39,28 @@ template<typename DataType>
 class RDM_base : public btas::Tensor<DataType> {
   protected:
     const int norb_;
-    int rank_;
 
   public:
-    RDM_base(const int n, const int rank) : btas::Tensor<DataType>(std::vector<unsigned long>(rank, n)), norb_(n), rank_(rank) {
+    RDM_base(const int n, const int rank) : btas::Tensor<DataType>(std::vector<unsigned long>(rank*2, n)), norb_(n) {
       zero();
     }
 
-    RDM_base(const RDM_base<DataType>& o) : btas::Tensor<DataType>(o), norb_(o.norb_), rank_(o.rank_) {
+    RDM_base(const RDM_base<DataType>& o) : btas::Tensor<DataType>(o), norb_(o.norb_) {
     }
 
     RDM_base(RDM_base<DataType>&& o) = default;
 
     // TODO in principle we should be able to get rid of the data() functions
     DataType* data() { return &(*this->begin()); }
-    const DataType* data() const { return &(*this->begin()); }
+    const DataType* data() const { return &(*this->cbegin()); }
 
-    void zero() { std::fill(this->begin(), this->end(), static_cast<DataType>(0.0)); }
+    using btas::Tensor<DataType>::begin;
+    using btas::Tensor<DataType>::end;
+
+    void zero() { std::fill(begin(), end(), static_cast<DataType>(0.0)); }
     void ax_plus_y(const DataType a, const RDM_base<DataType>& o) { btas::axpy(a, o, *this); }
     void ax_plus_y(const DataType& a, const std::shared_ptr<RDM_base<DataType>>& o) { this->ax_plus_y(a, *o); }
-    void scale(const DataType& a) { std::for_each(this->begin(), this->end(), [&a](DataType& p){ p *= a; }); }
+    void scale(const DataType& a) { std::for_each(begin(), end(), [&a](DataType& p){ p *= a; }); }
 
     int norb() const { return norb_; }
 

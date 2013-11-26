@@ -107,7 +107,7 @@ std::shared_ptr<GradFile> GradEval<SuperCIGrad>::compute() {
   dgemm_("N", "N", nmobasis, nocc, nocc, 2.0, hmo->data(), nmobasis, rdm1->data(), nmobasis, 0.0, g0->data(), nmobasis);
   // 2) two-electron contribution
   shared_ptr<const DFFullDist> full  = half->compute_second_transform(ref_->coeff()->slice(0,nocc));
-  shared_ptr<const DFFullDist> fulld = full->apply_2rdm(ref_->rdm2(target)->data(), ref_->rdm1(target)->data(), nclosed, nact);
+  shared_ptr<const DFFullDist> fulld = full->apply_2rdm(ref_->rdm2(target), ref_->rdm1(target), nclosed, nact);
   shared_ptr<const Matrix> buf = half->form_2index(fulld, 1.0);
   *g0 += *ref_->coeff() % *buf;
 
