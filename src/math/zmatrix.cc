@@ -83,8 +83,7 @@ ZMatrix& ZMatrix::operator-=(const ZMatrix& o) {
 
 
 ZMatrix& ZMatrix::operator=(const ZMatrix& o) {
-  assert(ndim_ == o.ndim_ && mdim_ == o.mdim_);
-  copy_n(o.data(), ndim_*mdim_, data());
+  btas::Tensor<complex<double>>::operator=(o);
   return *this;
 }
 

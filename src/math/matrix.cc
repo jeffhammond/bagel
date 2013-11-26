@@ -80,8 +80,7 @@ Matrix& Matrix::operator-=(const Matrix& o) {
 
 
 Matrix& Matrix::operator=(const Matrix& o) {
-  assert(ndim_ == o.ndim_ && mdim_ == o.mdim_);
-  copy_n(o.data(), ndim_*mdim_, data());
+  btas::Tensor<double>::operator=(o);
   return *this;
 }
 

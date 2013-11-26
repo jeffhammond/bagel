@@ -35,6 +35,7 @@
 #include <src/parallel/mpi_interface.h>
 
 #include <btas/tensor.h>
+#include <btas/btas.h>
 
 namespace bagel {
 
@@ -114,8 +115,9 @@ class Matrix_base : public btas::Tensor<DataType> {
 
     template<class T>
     void ax_plus_y_impl(const DataType& a, const T& o) {
-      std::transform(o.data(), o.data()+size(), data(), data(), [&a](DataType p, DataType q){ return a*p+q; }); 
+      btas::axpy(a, o, *this);
     }
+
     template<class T>
     DataType dot_product_impl(const T& o) const {
       return std::inner_product(data(), data()+size(), o.data(), DataType(0.0), std::plus<DataType>(), [](DataType p, DataType q){ return detail::conj(p)*q; });
@@ -233,19 +235,6 @@ class Matrix_base : public btas::Tensor<DataType> {
         std::transform(o + j*ld, o + (j+1)*ld, data() + nstart + i*ndim_, data() + nstart + i*ndim_,
                         [&a] (const DataType& p, const DataType& q) { return q + a*p; });
     }
-
-#if 0
-    // TODO to be removed >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    // operator() will be provided by the btas library
-    DataType& operator()(const size_t& i, const size_t& j) { return *(data()+i+ndim_*j); }
-    const DataType& operator()(const size_t& i, const size_t& j) const { return *(data()+i+ndim_*j); }
-    // interator to be supplied by btas (return value will be updated)
-    DataType* begin() { return data_.get(); }
-    DataType* end() { return begin() + size(); }
-    const DataType* cbegin() const { return data_.get(); }
-    const DataType* cend() const { return cbegin() + size(); }
-    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-#endif
 
     // TODO unfortunately I will need this for the time being.
     DataType* data() { return &(*this->begin()); }
