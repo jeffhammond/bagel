@@ -89,13 +89,6 @@ ZMatrix& ZMatrix::operator=(const ZMatrix& o) {
 }
 
 
-ZMatrix& ZMatrix::operator=(ZMatrix&& o) {
-  assert(ndim_ == o.ndim_ && mdim_ == o.mdim_);
-  data_ = move(o.data_);
-  return *this;
-}
-
-
 ZMatrix ZMatrix::operator-(const ZMatrix& o) const {
   ZMatrix out(*this);
   out.ax_plus_y(complex<double>(-1.0,0.0), o);
@@ -150,7 +143,7 @@ ZMatrix ZMatrix::operator/(const complex<double>& a) const {
 
 
 ZMatrix& ZMatrix::operator*=(const complex<double>& a) {
-  zscal_(ndim_*mdim_, a, data_, 1);
+  zscal_(ndim_*mdim_, a, data(), 1);
   return *this;
 }
 ZMatrix& ZMatrix::operator/=(const complex<double>& a) {
@@ -220,7 +213,7 @@ ZMatrix ZMatrix::operator/(const ZMatrix& o) const {
 
 ZMatrix& ZMatrix::operator/=(const ZMatrix& o) {
   assert(ndim_ == o.ndim_); assert(mdim_ == o.mdim_);
-  auto oiter = o.cbegin();
+  auto oiter = o.begin();
   for (auto& i : *this) {
     i /= *oiter++;
   }
@@ -353,14 +346,14 @@ unique_ptr<complex<double>[]> ZMatrix::diag() const {
 
 shared_ptr<ZMatrix> ZMatrix::transpose() const {
   auto out = make_shared<ZMatrix>(mdim_, ndim_, localized_);
-  mytranspose_(data_.get(), ndim_, mdim_, out->data());
+  mytranspose_(data(), ndim_, mdim_, out->data());
   return out;
 }
 
 
 shared_ptr<ZMatrix> ZMatrix::transpose_conjg() const {
   auto out = make_shared<ZMatrix>(mdim_, ndim_, localized_);
-  mytranspose_conjg_(data_.get(), ndim_, mdim_, out->data());
+  mytranspose_conjg_(data(), ndim_, mdim_, out->data());
   return out;
 }
 
@@ -387,11 +380,11 @@ void ZMatrix::purify_unitary() {
   // Schmidt orthogonalization
   for (int i = 0; i != ndim_; ++i) {
     for (int j = 0; j != i; ++j) {
-      const complex<double> a = zdotc_(ndim_, &data_[j*ndim_], 1, &data_[i*ndim_], 1);
-      zaxpy_(ndim_, -a, &data_[j*ndim_], 1, &data_[i*ndim_], 1);
+      const complex<double> a = zdotc_(ndim_, element_ptr(0,j), 1, element_ptr(0,i), 1);
+      zaxpy_(ndim_, -a, element_ptr(0,j), 1, element_ptr(0,i), 1);
     }
-    const complex<double> b = 1.0/sqrt(zdotc_(ndim_, &data_[i*ndim_], 1, &data_[i*ndim_], 1));
-    zscal_(ndim_, b, &data_[i*ndim_], 1);
+    const complex<double> b = 1.0/sqrt(zdotc_(ndim_, element_ptr(0,i), 1, element_ptr(0,i), 1));
+    zscal_(ndim_, b, element_ptr(0,i), 1);
   }
 }
 
@@ -450,7 +443,7 @@ void ZMatrix::inverse_half(const double thresh) {
 
   for (int i = 0; i != n; ++i) {
     double s = vec[i] > thresh ? 1.0/sqrt(sqrt(vec[i])) : 0.0;
-    zscal_(n, s, data_.get()+i*n, 1);
+    zscal_(n, s, data()+i*n, 1);
   }
 
 #ifndef NDEBUG
@@ -467,7 +460,7 @@ void ZMatrix::print(const string name, const size_t size) const {
   cout << "++++ " + name + " ++++" << endl;
   for (int i = 0; i != min(size,ndim_); ++i) {
     for (int j = 0; j != min(size,mdim_); ++j) {
-      cout << fixed << setw(30) << setprecision(8) << data_[j * ndim_ + i]  << " ";
+      cout << fixed << setw(30) << setprecision(8) << element(i, j) << " ";
     }
     cout << endl;
   }
@@ -527,7 +520,7 @@ void ZMatrix::add_real_block(const complex<double> a, const int ndim_i, const in
 
 shared_ptr<Matrix> ZMatrix::get_real_part() const {
   auto out = make_shared<Matrix>(ndim_, mdim_, localized_);
-  auto i = cbegin();
+  auto i = begin();
   for (auto& o : *out)
     o = real(*i++);
   return out;
@@ -536,7 +529,7 @@ shared_ptr<Matrix> ZMatrix::get_real_part() const {
 
 shared_ptr<Matrix> ZMatrix::get_imag_part() const {
   auto out = make_shared<Matrix>(ndim_, mdim_, localized_);
-  auto i = cbegin();
+  auto i = begin();
   for (auto& o : *out)
     o = imag(*i++);
   return out;
@@ -545,7 +538,7 @@ shared_ptr<Matrix> ZMatrix::get_imag_part() const {
 
 shared_ptr<ZMatrix> ZMatrix::get_conjg() const {
   auto out = make_shared<ZMatrix>(ndim_, mdim_, localized_);
-  auto i = cbegin();
+  auto i = begin();
   for (auto& o : *out)
     o = conj(*i++);
   return out;

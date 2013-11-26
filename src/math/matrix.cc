@@ -32,6 +32,7 @@
 #include <src/math/matrix.h>
 #include <cassert>
 #include <cmath>
+#include <utility>
 #include <stdexcept>
 #include <src/parallel/scalapack.h>
 #include <src/parallel/mpi_interface.h>
@@ -85,13 +86,6 @@ Matrix& Matrix::operator=(const Matrix& o) {
 }
 
 
-Matrix& Matrix::operator=(Matrix&& o) {
-  assert(ndim_ == o.ndim_ && mdim_ == o.mdim_);
-  data_ = move(o.data_);
-  return *this;
-}
-
-
 Matrix Matrix::operator-(const Matrix& o) const {
   Matrix out(*this);
   out.ax_plus_y(-1.0, o);
@@ -110,7 +104,7 @@ Matrix Matrix::operator*(const Matrix& o) const {
   assert(localized_ == o.localized_);
   if (localized_) {
 #endif
-    dgemm_("N", "N", l, n, m, 1.0, data_, l, o.data_, o.ndim_, 0.0, out.data_, l);
+    dgemm_("N", "N", l, n, m, 1.0, data(), l, o.data(), o.ndim_, 0.0, out.data(), l);
 #ifdef HAVE_SCALAPACK
   } else {
     unique_ptr<double[]> locala = getlocal();
@@ -146,9 +140,11 @@ Matrix Matrix::operator/(const double& a) const {
 
 
 Matrix& Matrix::operator*=(const double& a) {
-  dscal_(ndim_*mdim_, a, data_, 1);
+  dscal_(ndim_*mdim_, a, data(), 1);
   return *this;
 }
+
+
 Matrix& Matrix::operator/=(const double& a) {
   *this *= 1.0/a;
   return *this;
@@ -166,7 +162,7 @@ Matrix Matrix::operator%(const Matrix& o) const {
   assert(localized_ == o.localized_);
   if (localized_) {
 #endif
-    dgemm_("T", "N", l, n, m, 1.0, data_, m, o.data_, o.ndim_, 0.0, out.data_, l);
+    dgemm_("T", "N", l, n, m, 1.0, data(), m, o.data(), o.ndim_, 0.0, out.data(), l);
 #ifdef HAVE_SCALAPACK
   } else {
     unique_ptr<double[]> locala = getlocal();
@@ -193,7 +189,7 @@ Matrix Matrix::operator^(const Matrix& o) const {
   assert(localized_ == o.localized_);
   if (localized_) {
 #endif
-    dgemm_("N", "T", l, n, m, 1.0, data_, ndim_, o.data_, o.ndim_, 0.0, out.data_, l);
+    dgemm_("N", "T", l, n, m, 1.0, data(), ndim_, o.data(), o.ndim_, 0.0, out.data(), l);
 #ifdef HAVE_SCALAPACK
   } else {
     unique_ptr<double[]> locala = getlocal();
@@ -217,7 +213,7 @@ Matrix Matrix::operator/(const Matrix& o) const {
 
 Matrix& Matrix::operator/=(const Matrix& o) {
   assert(ndim_ == o.ndim_); assert(mdim_ == o.mdim_);
-  auto oiter = o.cbegin();
+  auto oiter = o.begin();
   for (auto& i : *this) {
     i /= *oiter++;
   }
@@ -319,7 +315,7 @@ shared_ptr<Matrix> Matrix::log(const int deg) const {
 
 shared_ptr<Matrix> Matrix::transpose(const double factor) const {
   auto out = make_shared<Matrix>(mdim_, ndim_, localized_);
-  mytranspose_(data_.get(), ndim_, mdim_, out->data(), factor);
+  mytranspose_(data(), ndim_, mdim_, out->data(), factor);
   return out;
 }
 
@@ -336,11 +332,11 @@ void Matrix::purify_unitary() {
   assert(ndim_ == mdim_);
   for (int i = 0; i != ndim_; ++i) {
     for (int j = 0; j != i; ++j) {
-      const double a = ddot_(ndim_, &data_[i*ndim_], 1, &data_[j*ndim_], 1);
-      daxpy_(ndim_, -a, &data_[j*ndim_], 1, &data_[i*ndim_], 1);
+      const double a = ddot_(ndim_, element_ptr(0, i), 1, element_ptr(0, j), 1);
+      daxpy_(ndim_, -a, element_ptr(0, j), 1, element_ptr(0, i), 1);
     }
-    const double b = 1.0/std::sqrt(ddot_(ndim_, &data_[i*ndim_], 1, &data_[i*ndim_], 1));
-    dscal_(ndim_, b, &data_[i*ndim_], 1);
+    const double b = 1.0/std::sqrt(ddot_(ndim_, element_ptr(0, i), 1, element_ptr(0, i), 1));
+    dscal_(ndim_, b, element_ptr(0, i), 1);
   }
 }
 
@@ -414,7 +410,7 @@ bool Matrix::inverse_symmetric(const double thresh) {
 
   for (int i = 0; i != n; ++i) {
     double s = vec[i] > thresh ? 1.0/std::sqrt(vec[i]) : 0.0;
-    dscal_(n, s, data_.get()+i*n, 1);
+    dscal_(n, s, data()+i*n, 1);
   }
   *this = *this ^ *this;
   vector<double> rm;
@@ -442,7 +438,7 @@ bool Matrix::inverse_half(const double thresh) {
     diagonalize(vec.get());
     for (int i = 0; i != n; ++i) {
       double s = vec[i] > thresh ? 1.0/std::sqrt(std::sqrt(vec[i])) : 0.0;
-      dscal_(n, s, data_.get()+i*n, 1);
+      dscal_(n, s, data()+i*n, 1);
     }
     *this = *this ^ *this;
 #ifdef HAVE_SCALAPACK
@@ -477,7 +473,7 @@ void Matrix::sqrt() {
   for (int i = 0; i != n; ++i) {
     if (vec[i] < 0.0) throw runtime_error("Matrix::sqrt() called, but this matrix is not positive definite");
     double s = std::sqrt(std::sqrt(vec[i]));
-    dscal_(n, s, data_.get()+i*n, 1);
+    for_each(data()+i*n, data()+(i+1)*n, [&s](double& a) { a *= s; });
   }
 
   *this = *this ^ *this;
@@ -489,7 +485,7 @@ void Matrix::print(const string name, const size_t size) const {
   cout << "++++ " + name + " ++++" << endl;
   for (int i = 0; i != min(size,ndim_); ++i) {
     for (int j = 0; j != min(size,mdim_); ++j) {
-      cout << fixed << setw(12) << setprecision(9) << data_[j * ndim_ + i]  << " ";
+      cout << fixed << setw(12) << setprecision(9) << element(i, j) << " ";
     }
     cout << endl;
   }

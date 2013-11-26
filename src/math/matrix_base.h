@@ -34,12 +34,13 @@
 #include <src/parallel/scalapack.h>
 #include <src/parallel/mpi_interface.h>
 
+#include <btas/tensor.h>
+
 namespace bagel {
 
 template<typename DataType>
-class Matrix_base {
+class Matrix_base : public btas::Tensor<DataType> {
   protected:
-    std::unique_ptr<DataType[]> data_;
     const size_t ndim_;
     const size_t mdim_;
 
@@ -147,7 +148,7 @@ class Matrix_base {
 
 
   public:
-    Matrix_base(const size_t n, const size_t m, const bool local = false) : data_(new DataType[n*m]), ndim_(n), mdim_(m), localized_(local) {
+    Matrix_base(const size_t n, const size_t m, const bool local = false) : btas::Tensor<DataType>(n, m), ndim_(n), mdim_(m), localized_(local) {
 #ifdef HAVE_SCALAPACK
       if (!localized_) {
         desc_ = mpi__->descinit(ndim_, mdim_);
@@ -157,7 +158,7 @@ class Matrix_base {
       zero();
     }
 
-    Matrix_base(const Matrix_base& o) : data_(new DataType[o.ndim_*o.mdim_]), ndim_(o.ndim_), mdim_(o.mdim_), localized_(o.localized_) {
+    Matrix_base(const Matrix_base<DataType>& o) : btas::Tensor<DataType>(o.ndim_, o.mdim_), ndim_(o.ndim_), mdim_(o.mdim_), localized_(o.localized_) {
 #ifdef HAVE_SCALAPACK
       if (!localized_) {
         desc_ = mpi__->descinit(ndim_, mdim_);
@@ -167,7 +168,7 @@ class Matrix_base {
       std::copy_n(o.data(), size(), data());
     }
 
-    Matrix_base(Matrix_base&& o) : data_(std::move(o.data_)), ndim_(o.ndim_), mdim_(o.mdim_), localized_(o.localized_) {
+    Matrix_base(Matrix_base<DataType>&& o) : btas::Tensor<DataType>(std::forward<Matrix_base<DataType>>(o)), ndim_(o.ndim_), mdim_(o.mdim_), localized_(o.localized_) {
 #ifdef HAVE_SCALAPACK
       if (!localized_) {
         desc_ = mpi__->descinit(ndim_, mdim_);
@@ -233,6 +234,7 @@ class Matrix_base {
                         [&a] (const DataType& p, const DataType& q) { return q + a*p; });
     }
 
+#if 0
     // TODO to be removed >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     // operator() will be provided by the btas library
     DataType& operator()(const size_t& i, const size_t& j) { return *(data()+i+ndim_*j); }
@@ -243,10 +245,11 @@ class Matrix_base {
     const DataType* cbegin() const { return data_.get(); }
     const DataType* cend() const { return cbegin() + size(); }
     // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#endif
 
     // TODO unfortunately I will need this for the time being.
-    DataType* data() { return &(*begin()); }
-    const DataType* data() const { return &(*cbegin()); }
+    DataType* data() { return &(*this->begin()); }
+    const DataType* data() const { return &(*this->begin()); }
 
     // alias of operator()
     DataType& element(size_t i, size_t j) { return (*this)(i,j); }
