@@ -106,8 +106,8 @@ class Matrix_base {
     std::shared_ptr<T> merge_impl(const std::shared_ptr<const T> o) const {
       assert(ndim_ == o->ndim_ && localized_ == o->localized_);
       auto out = std::make_shared<T>(ndim_, mdim_ + o->mdim_, localized_);
-      std::copy_n(data_.get(), ndim_*mdim_, out->data_.get());
-      std::copy_n(o->data_.get(), o->ndim_*o->mdim_, out->data_.get()+ndim_*mdim_);
+      std::copy_n(data(), ndim_*mdim_, out->data());
+      std::copy_n(o->data(), o->ndim_*o->mdim_, out->data()+ndim_*mdim_);
       return out;
     }
 
@@ -164,7 +164,7 @@ class Matrix_base {
         localsize_ = mpi__->numroc(ndim_, mdim_);
       }
 #endif
-      std::copy_n(o.data_.get(), size(), data_.get());
+      std::copy_n(o.data(), size(), data());
     }
 
     Matrix_base(Matrix_base&& o) : data_(std::move(o.data_)), ndim_(o.ndim_), mdim_(o.mdim_), localized_(o.localized_) {
@@ -184,7 +184,7 @@ class Matrix_base {
       assert(ndim_ == mdim_);
       for (size_t i = 0; i != mdim_; ++i)
         for (size_t j = i+1; j != ndim_; ++j)
-          data_[i+j*ndim_] = data_[j+i*ndim_];
+          element(i,j) = element(j,i);
     }
 
     void symmetrize() {
@@ -192,7 +192,7 @@ class Matrix_base {
       const size_t n = mdim_;
       for (size_t i = 0; i != n; ++i)
         for (size_t j = i+1; j != n; ++j)
-          data_[i+j*n] = data_[j+i*n] = 0.5*(data_[i+j*n]+data_[j+i*n]);
+          element(i,j) = element(j,i) = 0.5*(element(i,j)+element(j,i));
     }
 
     virtual void diagonalize(double* vec) = 0;
@@ -203,7 +203,7 @@ class Matrix_base {
 
     void copy_block(const int nstart, const int mstart, const int nsize, const int msize, const DataType* o) {
       for (size_t i = mstart, j = 0; i != mstart + msize; ++i, ++j)
-        std::copy_n(o + j*nsize, nsize, data_.get() + nstart + i*ndim_);
+        std::copy_n(o + j*nsize, nsize, data() + nstart + i*ndim_);
     }
     void copy_block(const int nstart, const int mstart, const int nsize, const int msize, const std::shared_ptr<const Matrix_base<DataType>> o) {
       assert(nsize == o->ndim() && msize == o->mdim()); 
@@ -215,7 +215,7 @@ class Matrix_base {
 
     void add_block(const DataType a, const int nstart, const int mstart, const int nsize, const int msize, const DataType* o) {
       for (size_t i = mstart, j = 0; i != mstart + msize ; ++i, ++j)
-        std::transform(o+j*nsize, o+(j+1)*nsize, data_.get()+nstart+i*ndim_, data_.get()+nstart+i*ndim_,
+        std::transform(o+j*nsize, o+(j+1)*nsize, data()+nstart+i*ndim_, data()+nstart+i*ndim_,
                        [&a](DataType p, DataType q){ return q + a*p; });
     }
     void add_block(const DataType a, const int nstart, const int mstart, const int nsize, const int msize, const std::shared_ptr<const Matrix_base<DataType>> o) {
@@ -229,32 +229,37 @@ class Matrix_base {
     void add_strided_block(const DataType a, const int nstart, const int mstart, const int nsize, const int msize,
                             const int ld, const DataType* o) {
       for (size_t i = mstart, j = 0; i != mstart + msize; ++i, ++j)
-        std::transform(o + j*ld, o + (j+1)*ld, data_.get() + nstart + i*ndim_, data_.get() + nstart + i*ndim_,
+        std::transform(o + j*ld, o + (j+1)*ld, data() + nstart + i*ndim_, data() + nstart + i*ndim_,
                         [&a] (const DataType& p, const DataType& q) { return q + a*p; });
     }
 
     std::unique_ptr<DataType[]> get_block(const int nstart, const int mstart, const int nsize, const int msize) const {
       std::unique_ptr<DataType[]> out(new DataType[nsize*msize]);
       for (size_t i = mstart, j = 0; i != mstart + msize ; ++i, ++j)
-        std::copy_n(data_.get() + nstart + i*ndim_, nsize, out.get() + j*nsize);
+        std::copy_n(data() + nstart + i*ndim_, nsize, out.get() + j*nsize);
       return out;
     }
 
-    DataType& operator()(const size_t& i, const size_t& j) { return data_[i+j*ndim_]; }
-    const DataType& operator()(const size_t& i, const size_t& j) const { return data_[i+j*ndim_]; }
-
-    DataType* data() { return data_.get(); }
-    const DataType* data() const { return data_.get(); }
-
+    // TODO to be removed >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // operator() will be provided by the btas library
+    DataType& operator()(const size_t& i, const size_t& j) { return *(data()+i+ndim_*j); }
+    const DataType& operator()(const size_t& i, const size_t& j) const { return *(data()+i+ndim_*j); }
+    // interator to be supplied by btas (return value will be updated)
     DataType* begin() { return data_.get(); }
-    DataType* end() { return data_.get() + size(); }
+    DataType* end() { return begin() + size(); }
     const DataType* cbegin() const { return data_.get(); }
-    const DataType* cend() const { return data_.get() + size(); }
+    const DataType* cend() const { return cbegin() + size(); }
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-    DataType& element(size_t i, size_t j) { return *element_ptr(i, j); }
-    DataType* element_ptr(size_t i, size_t j) { return data()+i+j*ndim_; }
-    const DataType& element(size_t i, size_t j) const { return *element_ptr(i, j); }
-    const DataType* element_ptr(size_t i, size_t j) const { return data()+i+j*ndim_; }
+    // TODO unfortunately I will need this for the time being.
+    DataType* data() { return &(*begin()); }
+    const DataType* data() const { return &(*cbegin()); }
+
+    // alias of operator()
+    DataType& element(size_t i, size_t j) { return (*this)(i,j); }
+    DataType* element_ptr(size_t i, size_t j) { return &element(i,j); }
+    const DataType& element(size_t i, size_t j) const { return (*this)(i,j); }
+    const DataType* element_ptr(size_t i, size_t j) const { return &element(i,j); }
 
     void ax_plus_y(const DataType a, const std::shared_ptr<const Matrix_base<DataType>> o) { ax_plus_y_impl(a, *o); } 
     DataType dot_product(const std::shared_ptr<const Matrix_base<DataType>> o) const { return dot_product_impl(*o); }
@@ -267,18 +272,18 @@ class Matrix_base {
       DataType out(0.0);
       assert(ndim_ == mdim_);
       for (int i = 0; i != ndim_; ++i)
-        out += data_[i * ndim_ + i];
+        out += element(i,i);
       return out;
     }
 
     void scale(const DataType& a) { std::for_each(data(), data()+size(), [&a](DataType& p){ p *= a; }); }
 
     void allreduce() {
-      mpi__->allreduce(data_.get(), size());
+      mpi__->allreduce(data(), size());
     }
 
     void broadcast(const int root = 0) {
-      mpi__->broadcast(data_.get(), size(), root);
+      mpi__->broadcast(data(), size(), root);
     }
 
     // if we use this matrix within node, or in parallel
