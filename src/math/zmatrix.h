@@ -55,7 +55,6 @@ class ZMatrix : public Matrix_base<std::complex<double>>, public std::enable_sha
     void hermite();
     std::shared_ptr<ZMatrix> cut(const int nstart, const int nend) const { return get_submatrix(nstart, 0, nend-nstart, mdim_); }
     std::shared_ptr<ZMatrix> slice(const int mstart, const int mend) const { return get_submatrix(0, mstart, ndim_, mend-mstart); }
-    std::shared_ptr<ZMatrix> resize(const int n, const int m) const { return this->resize_impl<ZMatrix>(n, m); }
     std::shared_ptr<ZMatrix> merge(const std::shared_ptr<const ZMatrix> o) const { return this->merge_impl<ZMatrix>(o); }
     // diagonalize this matrix (overwritten by a coefficient matrix)
     virtual void diagonalize(double* vec);

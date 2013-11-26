@@ -54,7 +54,6 @@ class Matrix : public Matrix_base<double>, public std::enable_shared_from_this<M
 
     std::shared_ptr<Matrix> cut(const int nstart, const int nend) const { return get_submatrix(nstart, 0, nend-nstart, mdim_); }
     std::shared_ptr<Matrix> slice(const int mstart, const int mend) const { return get_submatrix(0, mstart, ndim_, mend-mstart); }
-    std::shared_ptr<Matrix> resize(const int n, const int m) const { return this->resize_impl<Matrix>(n, m); }
     std::shared_ptr<Matrix> merge(const std::shared_ptr<const Matrix> o) const { return this->merge_impl<Matrix>(o); }
 
     // antisymmetrize

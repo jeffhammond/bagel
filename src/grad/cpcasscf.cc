@@ -121,7 +121,9 @@ shared_ptr<PairFile<Matrix, Dvec>> CPCASSCF::solve() const {
   auto cinv = make_shared<const Matrix>(*ref_->coeff() % *ovl);
 
   // State averaged density matrix
-  shared_ptr<const Matrix> dsa = ref_->rdm1_mat()->resize(nmobasis, nmobasis); // TODO resize is just a waste of time..
+  auto dsatmp = ref_->rdm1_mat();
+  auto dsa = make_shared<Matrix>(nmobasis, nmobasis);
+  dsa->copy_block(0, 0, dsatmp->ndim(), dsatmp->mdim(), dsatmp);
 
   cout << "  === CPCASSCF iteration ===" << endl << endl;
 

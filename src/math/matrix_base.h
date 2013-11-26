@@ -97,14 +97,6 @@ class Matrix_base : public btas::Tensor<DataType> {
       return out;
     }
     template<class T>
-    std::shared_ptr<T> resize_impl(const int n, const int m) const {
-    assert(n >= ndim_ && m >= mdim_);
-      auto out = std::make_shared<T>(n, m, localized_);
-      for (int i = 0; i != mdim_; ++i)
-        std::copy_n(data()+i*ndim_, ndim_, out->data()+i*n);
-      return out;
-    }
-    template<class T>
     std::shared_ptr<T> merge_impl(const std::shared_ptr<const T> o) const {
       assert(ndim_ == o->ndim_ && localized_ == o->localized_);
       auto out = std::make_shared<T>(ndim_, mdim_ + o->mdim_, localized_);

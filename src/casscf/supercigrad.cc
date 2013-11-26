@@ -54,7 +54,7 @@ std::shared_ptr<GradFile> GradEval<SuperCIGrad>::compute() {
   const int nvirt = ref_->nvirt();
 
   // related to denominators
-  const int nmobasis = coeff->mdim(); 
+  const int nmobasis = coeff->mdim();
   assert(nmobasis == nclosed+nact+nocc+nvirt);
   auto eig = make_shared<Matrix>(nmobasis, nmobasis);
   {
@@ -124,12 +124,16 @@ std::shared_ptr<GradFile> GradEval<SuperCIGrad>::compute() {
   shared_ptr<PairFile<Matrix, Dvec>> zvec = cp->solve();
 
   // form Zd + dZ^+
-  shared_ptr<Matrix> dsa = ref_->rdm1_mat()->resize(nmobasis, nmobasis);
+  auto dsatmp = ref_->rdm1_mat();
+  auto dsa = make_shared<Matrix>(nmobasis, nmobasis);
+  dsa->copy_block(0, 0, dsatmp->ndim(), dsatmp->mdim(), dsatmp);
   shared_ptr<Matrix> zslice = zvec->first();
   auto dm = make_shared<Matrix>(*zslice * *dsa + (*dsa ^ *zslice));
 
   // compute dipole...
-  shared_ptr<Matrix> dtot = ref_->rdm1_mat(target)->resize(nmobasis, nmobasis);
+  auto dtottmp = ref_->rdm1_mat(target);
+  auto dtot = make_shared<Matrix>(nmobasis, nmobasis);
+  dtot->copy_block(0, 0, dtottmp->ndim(), dtottmp->mdim(), dtottmp);
   dtot->ax_plus_y(1.0, dm);
 
   // form zdensity
@@ -138,7 +142,9 @@ std::shared_ptr<GradFile> GradEval<SuperCIGrad>::compute() {
   shared_ptr<const RDM<2>> zrdm2;
   tie(zrdm1, zrdm2) = task_->fci()->compute_rdm12_av_from_dvec(civ, zvec->second(), detex);
 
-  shared_ptr<Matrix> zrdm1_mat = zrdm1->rdm1_mat(nclosed, false)->resize(nmobasis, nmobasis);
+  auto zrdm1_tmp = zrdm1->rdm1_mat(nclosed, false);
+  auto zrdm1_mat = make_shared<Matrix>(nmobasis, nmobasis);
+  zrdm1_mat->copy_block(0, 0, zrdm1_tmp->ndim(), zrdm1_tmp->mdim(), zrdm1_tmp);
   zrdm1_mat->symmetrize();
   dtot->ax_plus_y(1.0, zrdm1_mat);
 
