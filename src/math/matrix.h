@@ -74,7 +74,6 @@ class Matrix : public Matrix_base<double>, public std::enable_shared_from_this<M
     void sqrt();
 
     using Matrix_base<double>::copy_block;
-    using Matrix_base<double>::get_block;
     using Matrix_base<double>::add_block;
 
     void copy_block(const int nstart, const int mstart, const int nsize, const int msize, const Matrix& o) {

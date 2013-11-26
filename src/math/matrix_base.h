@@ -233,13 +233,6 @@ class Matrix_base {
                         [&a] (const DataType& p, const DataType& q) { return q + a*p; });
     }
 
-    std::unique_ptr<DataType[]> get_block(const int nstart, const int mstart, const int nsize, const int msize) const {
-      std::unique_ptr<DataType[]> out(new DataType[nsize*msize]);
-      for (size_t i = mstart, j = 0; i != mstart + msize ; ++i, ++j)
-        std::copy_n(data() + nstart + i*ndim_, nsize, out.get() + j*nsize);
-      return out;
-    }
-
     // TODO to be removed >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     // operator() will be provided by the btas library
     DataType& operator()(const size_t& i, const size_t& j) { return *(data()+i+ndim_*j); }

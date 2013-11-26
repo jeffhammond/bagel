@@ -191,10 +191,14 @@ class MOFock {
       for (auto& i0 : blocks_[0]) {
         for (auto& i1 : blocks_[1]) {
           {
-            std::unique_ptr<double[]> target = f.get_block(i1.offset(), i0.offset(), i1.size(), i0.size());
+            std::shared_ptr<Matrix> tm = f.get_submatrix(i1.offset(), i0.offset(), i1.size(), i0.size());
+            std::unique_ptr<double[]> target(new double[tm->size()]);
+            std::copy_n(tm->data(), tm->size(), target.get());
             data_->put_block(target, i1, i0);
           } {
-            std::unique_ptr<double[]> target = hc.get_block(i1.offset(), i0.offset(), i1.size(), i0.size());
+            std::shared_ptr<Matrix> tm = hc.get_submatrix(i1.offset(), i0.offset(), i1.size(), i0.size());
+            std::unique_ptr<double[]> target(new double[tm->size()]);
+            std::copy_n(tm->data(), tm->size(), target.get());
             hcore_->put_block(target, i1, i0);
           }
         }

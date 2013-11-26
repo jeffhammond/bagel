@@ -69,7 +69,6 @@ class ZMatrix : public Matrix_base<std::complex<double>>, public std::enable_sha
     void inverse_half(const double thresh = 1.0e-8);
 
     using Matrix_base<std::complex<double>>::copy_block;
-    using Matrix_base<std::complex<double>>::get_block;
     using Matrix_base<std::complex<double>>::add_block;
 
     void copy_block(const int nstart, const int mstart, const int ndim, const int mdim, const ZMatrix& o) {

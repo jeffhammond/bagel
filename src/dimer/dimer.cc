@@ -390,8 +390,8 @@ void Dimer::set_active(const std::shared_ptr<const PTree> idata) {
   const int nbasisA = nbasis_.first;
   const int nbasisB = nbasis_.second;
 
-  active->copy_block(0, 0, nbasisA, nactA, active_refs.first->coeff()->get_block(0, nclosedA, nbasisA, nactA));
-  active->copy_block(nbasisA, nactA, nbasisB, nactB, active_refs.second->coeff()->get_block(0, nclosedB, nbasisB, nactB));
+  active->copy_block(0, 0, nbasisA, nactA, active_refs.first->coeff()->get_submatrix(0, nclosedA, nbasisA, nactA));
+  active->copy_block(nbasisA, nactA, nbasisB, nactB, active_refs.second->coeff()->get_submatrix(0, nclosedB, nbasisB, nactB));
 
   auto S = make_shared<Overlap>(sgeom_);
   auto overlaps = make_shared<Matrix>((*sref_->coeff()) % (*S) * (*active));
