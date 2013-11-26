@@ -31,16 +31,17 @@
 #include <src/util/timer.h>
 #include <src/parallel/staticdist.h>
 
+#include <btas/tensor.h>
+
 namespace bagel {
 
 /*
     DFBlock is a slice of 3-index DF integrals. Distributed by the first index
 */
 
-class DFBlock {
+class DFBlock : public btas::Tensor<double> {
   protected:
     // aux_ runs fastest, b2_ runs slowest
-    std::unique_ptr<double[]> data_;
 
     // distribution information
     const std::shared_ptr<const StaticDist> adist_shell_;
@@ -74,7 +75,7 @@ class DFBlock {
 
     std::shared_ptr<DFBlock> clone() const;
     std::shared_ptr<DFBlock> copy() const;
-    void zero() { std::fill_n(data_.get(), size(), 0.0); }
+    void zero() { std::fill_n(data(), size(), 0.0); }
 
     // dist
     const std::shared_ptr<const StaticDist>& adist_now() const { return averaged_ ? adist_ : adist_shell_; }
@@ -92,10 +93,8 @@ class DFBlock {
     size_t b1start() const { return b1start_; }
     size_t b2start() const { return b2start_; }
 
-    // TODO direct access to data will be disabled once implementation is done
-    double* get() { return data_.get(); }
-    const double* get() const { return data_.get(); }
-    double& operator[](const size_t i) { return data_[i]; }
+    double* data() { return &(*begin()); }
+    const double* data() const { return &(*begin()); }
 
     // some math functions
     DFBlock& operator+=(const DFBlock& o);
@@ -140,8 +139,10 @@ class DFBlock {
     // CAUTION, ist, jst, and kst are absolute number (NOT relative to astart_, ...). Returns double[] whose size is i*j*k
     std::shared_ptr<Matrix> get_block(const int ist, const int i, const int jst, const int j, const int kst, const int k) const;
 
+#if 0
     // use with caution
     std::unique_ptr<double[]> release_data() { return std::move(data_); }
+#endif
 };
 
 }
