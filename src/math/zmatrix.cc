@@ -65,19 +65,26 @@ ZMatrix::ZMatrix(const DistZMatrix& o) : Matrix_base<complex<double>>(o.ndim(), 
 
 ZMatrix ZMatrix::operator+(const ZMatrix& o) const {
   ZMatrix out(*this);
-  out.ax_plus_y(complex<double>(1.0,0.0), o);
+  out += o;
+  return out;
+}
+
+
+ZMatrix ZMatrix::operator-(const ZMatrix& o) const {
+  ZMatrix out(*this);
+  out -= o;
   return out;
 }
 
 
 ZMatrix& ZMatrix::operator+=(const ZMatrix& o) {
-  ax_plus_y(complex<double>(1.0,0.0), o);
+  ax_plus_y(1.0, o);
   return *this;
 }
 
 
 ZMatrix& ZMatrix::operator-=(const ZMatrix& o) {
-  ax_plus_y(complex<double>(-1.0,0.0), o);
+  ax_plus_y(-1.0, o);
   return *this;
 }
 
@@ -85,13 +92,6 @@ ZMatrix& ZMatrix::operator-=(const ZMatrix& o) {
 ZMatrix& ZMatrix::operator=(const ZMatrix& o) {
   btas::Tensor<complex<double>>::operator=(o);
   return *this;
-}
-
-
-ZMatrix ZMatrix::operator-(const ZMatrix& o) const {
-  ZMatrix out(*this);
-  out.ax_plus_y(complex<double>(-1.0,0.0), o);
-  return out;
 }
 
 
@@ -142,9 +142,11 @@ ZMatrix ZMatrix::operator/(const complex<double>& a) const {
 
 
 ZMatrix& ZMatrix::operator*=(const complex<double>& a) {
-  zscal_(ndim_*mdim_, a, data(), 1);
+  scale(a);
   return *this;
 }
+
+
 ZMatrix& ZMatrix::operator/=(const complex<double>& a) {
   *this *= 1.0/a;
   return *this;
@@ -356,6 +358,7 @@ shared_ptr<ZMatrix> ZMatrix::transpose_conjg() const {
   return out;
 }
 
+
 void ZMatrix::antisymmetrize() {
   assert(ndim_ == mdim_);
 
@@ -383,7 +386,7 @@ void ZMatrix::purify_unitary() {
       zaxpy_(ndim_, -a, element_ptr(0,j), 1, element_ptr(0,i), 1);
     }
     const complex<double> b = 1.0/sqrt(zdotc_(ndim_, element_ptr(0,i), 1, element_ptr(0,i), 1));
-    zscal_(ndim_, b, element_ptr(0,i), 1);
+    for_each(element_ptr(0,i), element_ptr(0,i+1), [&b](complex<double>& a) { a *= b; });
   }
 }
 
@@ -442,7 +445,7 @@ void ZMatrix::inverse_half(const double thresh) {
 
   for (int i = 0; i != n; ++i) {
     double s = vec[i] > thresh ? 1.0/sqrt(sqrt(vec[i])) : 0.0;
-    zscal_(n, s, data()+i*n, 1);
+    for_each(element_ptr(0,i), element_ptr(0,i+1), [&s](complex<double>& a) { a *= s; });
   }
 
 #ifndef NDEBUG
