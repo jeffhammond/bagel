@@ -39,7 +39,7 @@ namespace bagel {
     DFBlock is a slice of 3-index DF integrals. Distributed by the first index
 */
 
-class DFBlock : public btas::Tensor<double> {
+class DFBlock : public btas::Tensor<double,CblasColMajor> {
   protected:
     // aux_ runs fastest, b2_ runs slowest
 
@@ -115,9 +115,9 @@ class DFBlock : public btas::Tensor<double> {
 
     // 2RDM contractions
     std::shared_ptr<DFBlock> apply_rhf_2RDM(const double scale_exch) const;
-    std::shared_ptr<DFBlock> apply_uhf_2RDM(std::shared_ptr<const btas::Tensor<double>>, std::shared_ptr<const btas::Tensor<double>>) const;
-    std::shared_ptr<DFBlock> apply_2RDM(std::shared_ptr<const btas::Tensor<double>> rdm, std::shared_ptr<const btas::Tensor<double>> rdm1, const int nclosed, const int nact) const;
-    std::shared_ptr<DFBlock> apply_2RDM(std::shared_ptr<const btas::Tensor<double>> rdm) const;
+    std::shared_ptr<DFBlock> apply_uhf_2RDM(std::shared_ptr<const btas::Tensor<double,CblasColMajor>>, std::shared_ptr<const btas::Tensor<double,CblasColMajor>>) const;
+    std::shared_ptr<DFBlock> apply_2RDM(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm, std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm1, const int nclosed, const int nact) const;
+    std::shared_ptr<DFBlock> apply_2RDM(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm) const;
 
     // Form 2- and 4-index integrals
     std::shared_ptr<Matrix> form_2index(const std::shared_ptr<const DFBlock> o, const double a) const;

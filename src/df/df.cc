@@ -393,7 +393,7 @@ shared_ptr<DFFullDist> DFFullDist::apply_closed_2RDM(const double scale_exch) co
 }
 
 
-shared_ptr<DFFullDist> DFFullDist::apply_uhf_2RDM(std::shared_ptr<const btas::Tensor<double>> amat, std::shared_ptr<const btas::Tensor<double>> bmat) const {
+shared_ptr<DFFullDist> DFFullDist::apply_uhf_2RDM(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> amat, std::shared_ptr<const btas::Tensor<double,CblasColMajor>> bmat) const {
   auto out = make_shared<DFFullDist>(df_, nindex1_, nindex2_);
   for (auto& i : block_)
     out->add_block(i->apply_uhf_2RDM(amat, bmat));
@@ -401,7 +401,7 @@ shared_ptr<DFFullDist> DFFullDist::apply_uhf_2RDM(std::shared_ptr<const btas::Te
 }
 
 
-shared_ptr<DFFullDist> DFFullDist::apply_2rdm(std::shared_ptr<const btas::Tensor<double>> rdm, std::shared_ptr<const btas::Tensor<double>> rdm1, const int nclosed, const int nact) const {
+shared_ptr<DFFullDist> DFFullDist::apply_2rdm(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm, std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm1, const int nclosed, const int nact) const {
   auto out = make_shared<DFFullDist>(df_, nindex1_, nindex2_);
   for (auto& i : block_)
     out->add_block(i->apply_2RDM(rdm, rdm1, nclosed, nact));
@@ -409,7 +409,7 @@ shared_ptr<DFFullDist> DFFullDist::apply_2rdm(std::shared_ptr<const btas::Tensor
 }
 
 
-shared_ptr<DFFullDist> DFFullDist::apply_2rdm(std::shared_ptr<const btas::Tensor<double>> rdm) const {
+shared_ptr<DFFullDist> DFFullDist::apply_2rdm(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm) const {
   auto out = make_shared<DFFullDist>(df_, nindex1_, nindex2_);
   for (auto& i : block_)
     out->add_block(i->apply_2RDM(rdm));

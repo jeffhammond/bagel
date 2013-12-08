@@ -36,16 +36,16 @@
 namespace bagel {
 
 template<typename DataType>
-class RDM_base : public btas::Tensor<DataType> {
+class RDM_base : public btas::Tensor<DataType,CblasColMajor> {
   protected:
     const int norb_;
 
   public:
-    RDM_base(const int n, const int rank) : btas::Tensor<DataType>(std::vector<unsigned long>(rank*2, n)), norb_(n) {
+    RDM_base(const int n, const int rank) : btas::Tensor<DataType,CblasColMajor>(std::vector<unsigned long>(rank*2, n)), norb_(n) {
       zero();
     }
 
-    RDM_base(const RDM_base<DataType>& o) : btas::Tensor<DataType>(o), norb_(o.norb_) {
+    RDM_base(const RDM_base<DataType>& o) : btas::Tensor<DataType,CblasColMajor>(o), norb_(o.norb_) {
     }
 
     RDM_base(RDM_base<DataType>&& o) = default;
@@ -54,8 +54,8 @@ class RDM_base : public btas::Tensor<DataType> {
     DataType* data() { return &(*this->begin()); }
     const DataType* data() const { return &(*this->cbegin()); }
 
-    using btas::Tensor<DataType>::begin;
-    using btas::Tensor<DataType>::end;
+    using btas::Tensor<DataType,CblasColMajor>::begin;
+    using btas::Tensor<DataType,CblasColMajor>::end;
 
     void zero() { std::fill(begin(), end(), static_cast<DataType>(0.0)); }
     void ax_plus_y(const DataType a, const RDM_base<DataType>& o) { btas::axpy(a, o, *this); }
