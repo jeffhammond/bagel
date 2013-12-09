@@ -97,11 +97,9 @@ class DFBlock : public btas::Tensor<double,CblasColMajor> {
     const double* data() const { return &(*begin()); }
 
     // some math functions
-    DFBlock& operator+=(const DFBlock& o);
-    DFBlock& operator-=(const DFBlock& o);
-    void ax_plus_y(const double a, const DFBlock& o);
+    void ax_plus_y(const double a, const DFBlock& o) { btas::axpy(a, o, *this); }
     void ax_plus_y(const double a, const std::shared_ptr<const DFBlock> o) { ax_plus_y(a, *o); }
-    void scale(const double a);
+    void scale(const double a) { btas::scal(a, *this); }
 
     // add ab^+  to this.
     void add_direct_product(const std::shared_ptr<const Matrix> a, const std::shared_ptr<const Matrix> b, const double fac);

@@ -261,20 +261,6 @@ shared_ptr<DFBlock> DFBlock::copy() const {
 }
 
 
-DFBlock& DFBlock::operator+=(const DFBlock& o) { ax_plus_y( 1.0, o); return *this; }
-DFBlock& DFBlock::operator-=(const DFBlock& o) { ax_plus_y(-1.0, o); return *this; }
-
-
-void DFBlock::ax_plus_y(const double a, const DFBlock& o) {
-  btas::axpy(a, o, *this);
-}
-
-
-void DFBlock::scale(const double a) {
-  for (auto& i : *this) i *= a;
-}
-
-
 void DFBlock::add_direct_product(const shared_ptr<const Matrix> a, const shared_ptr<const Matrix> b, const double fac) {
   assert(asize_ == a->ndim() && b1size_*b2size_ == b->size());
   dger_(asize_, b1size_*b2size_, fac, a->data(), 1, b->data(), 1, data(), asize_);

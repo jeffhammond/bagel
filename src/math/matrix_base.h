@@ -41,6 +41,9 @@ namespace bagel {
 
 template<typename DataType>
 class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
+  public:
+    using btas::Tensor<DataType,CblasColMajor>::data;
+
   protected:
     const size_t ndim_;
     const size_t mdim_;
@@ -115,7 +118,7 @@ class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
       return std::inner_product(data(), data()+size(), o.data(), DataType(0.0), std::plus<DataType>(), [](DataType p, DataType q){ return detail::conj(p)*q; });
     }
     template<class T>
-    double orthog_impl(const std::list<std::shared_ptr<const T>> o) { 
+    double orthog_impl(const std::list<std::shared_ptr<const T>> o) {
       for (auto& it : o) {
         const DataType m = detail::conj(this->dot_product(it));
         ax_plus_y(-m, it);
@@ -201,7 +204,7 @@ class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
         std::copy_n(o + j*nsize, nsize, data() + nstart + i*ndim_);
     }
     void copy_block(const int nstart, const int mstart, const int nsize, const int msize, const std::shared_ptr<const Matrix_base<DataType>> o) {
-      assert(nsize == o->ndim() && msize == o->mdim()); 
+      assert(nsize == o->ndim() && msize == o->mdim());
       copy_block(nstart, mstart, nsize, msize, o->data());
     }
     void copy_block(const int nstart, const int mstart, const int nsize, const int msize, const std::unique_ptr<DataType[]>& o) {
@@ -228,17 +231,13 @@ class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
                         [&a] (const DataType& p, const DataType& q) { return q + a*p; });
     }
 
-    // TODO unfortunately I will need this for the time being.
-    DataType* data() { return &(*this->begin()); }
-    const DataType* data() const { return &(*this->begin()); }
-
     // alias of operator()
     DataType& element(size_t i, size_t j) { return (*this)(i,j); }
     DataType* element_ptr(size_t i, size_t j) { return &element(i,j); }
     const DataType& element(size_t i, size_t j) const { return (*this)(i,j); }
     const DataType* element_ptr(size_t i, size_t j) const { return &element(i,j); }
 
-    void ax_plus_y(const DataType a, const std::shared_ptr<const Matrix_base<DataType>> o) { ax_plus_y_impl(a, *o); } 
+    void ax_plus_y(const DataType a, const std::shared_ptr<const Matrix_base<DataType>> o) { ax_plus_y_impl(a, *o); }
     DataType dot_product(const std::shared_ptr<const Matrix_base<DataType>> o) const { return dot_product_impl(*o); }
 
     double norm() const { return std::sqrt(detail::real(dot_product_impl(*this))); }
@@ -253,7 +252,7 @@ class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
       return out;
     }
 
-    void scale(const DataType& a) { std::for_each(data(), data()+size(), [&a](DataType& p){ p *= a; }); }
+    void scale(const DataType& a) { btas::scal(a, *this); }
 
     void allreduce() {
       mpi__->allreduce(data(), size());

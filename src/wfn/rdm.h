@@ -60,7 +60,7 @@ class RDM_base : public btas::Tensor<DataType,CblasColMajor> {
     void zero() { std::fill(begin(), end(), static_cast<DataType>(0.0)); }
     void ax_plus_y(const DataType a, const RDM_base<DataType>& o) { btas::axpy(a, o, *this); }
     void ax_plus_y(const DataType& a, const std::shared_ptr<RDM_base<DataType>>& o) { this->ax_plus_y(a, *o); }
-    void scale(const DataType& a) { std::for_each(begin(), end(), [&a](DataType& p){ p *= a; }); }
+    void scale(const DataType& a) { btas::scal(a, *this); }
 
     int norb() const { return norb_; }
 
@@ -82,11 +82,6 @@ class RDM : public RDM_base<DataType> {
 
     template<typename ...args>
     const DataType& element(const args&... index) const { return (*this)(index...); }
-
-    RDM<rank,DataType>& operator+=(const RDM<rank,DataType>& o) { this->ax_plus_y(1.0, o); return *this; }
-    RDM<rank,DataType>& operator-=(const RDM<rank,DataType>& o) { this->ax_plus_y(-1.0, o); return *this; }
-    RDM<rank,DataType> operator+(const RDM<rank,DataType>& o) const { RDM<rank,DataType> out(*this); out.ax_plus_y(1.0, o); return out; }
-    RDM<rank,DataType> operator-(const RDM<rank,DataType>& o) const { RDM<rank,DataType> out(*this); out.ax_plus_y(-1.0, o); return out; }
 
     // returns if this is natural orbitals - only for rank 1
     bool natural_orbitals() const {
