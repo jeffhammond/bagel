@@ -233,17 +233,13 @@ shared_ptr<DFBlock> DFBlock::transform_second(std::shared_ptr<const Matrix> cmat
 
 shared_ptr<DFBlock> DFBlock::transform_third(std::shared_ptr<const Matrix> cmat, const bool trans) const {
   assert(trans ? cmat->mdim() : cmat->ndim() == b2size_);
-  const double* const c = cmat->data();
   const int nocc = trans ? cmat->ndim() : cmat->mdim();
 
   // so far I only consider the following case
   assert(b2start_ == 0);
   auto out = make_shared<DFBlock>(adist_shell_, adist_, asize_, b1size_, nocc, astart_, b1start_, 0, averaged_);
 
-  if (!trans)
-    dgemm_("N", "N", asize_*b1size_, nocc, b2size_, 1.0, data(), asize_*b1size_, c, b2size_, 0.0, out->data(), asize_*b1size_);
-  else  // trans -> back transform
-    dgemm_("N", "T", asize_*b1size_, nocc, b2size_, 1.0, data(), asize_*b1size_, c, nocc, 0.0, out->data(), asize_*b1size_);
+  btas::gemm(CblasColMajor, CblasNoTrans, (trans ? CblasTrans : CblasNoTrans), 1.0, *this, *cmat, 0.0, *out);
 
   return out;
 }
