@@ -107,13 +107,13 @@ void RDM<2>::transform(const shared_ptr<Matrix>& coeff) {
   for (int i = 0; i != norb_; ++i)
     dgemm_("N", "N", dim, norb_, norb_, 1.0, buf.get()+i*dim*norb_, dim, start, norb_, 0.0, data()+i*dim*norb_, dim);
   // then tranpose
-  blas::transpose(data(), dim_, dim_, buf.get());
+  blas::transpose(data(), dim, dim, buf.get());
   // and do it again
   dgemm_("N", "N", dim*norb_, norb_, norb_, 1.0, buf.get(), dim*norb_, start, norb_, 0.0, data(), dim*norb_);
   for (int i = 0; i != norb_; ++i)
     dgemm_("N", "N", dim, norb_, norb_, 1.0, data()+i*dim*norb_, dim, start, norb_, 0.0, buf.get()+i*dim*norb_, dim);
   // to make sure for non-symmetric density matrices (and anyway this should be cheap).
-  blas::transpose(buf.get(), dim_, dim_, data());
+  blas::transpose(buf.get(), dim, dim, data());
 }
 
 
