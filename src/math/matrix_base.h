@@ -115,7 +115,7 @@ class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
 
     template<class T>
     DataType dot_product_impl(const T& o) const {
-      return std::inner_product(data(), data()+size(), o.data(), DataType(0.0), std::plus<DataType>(), [](DataType p, DataType q){ return detail::conj(p)*q; });
+      return blas::dot_product(data(), size(), o.data());
     }
     template<class T>
     double orthog_impl(const std::list<std::shared_ptr<const T>> o) {
@@ -213,8 +213,7 @@ class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
 
     void add_block(const DataType a, const int nstart, const int mstart, const int nsize, const int msize, const DataType* o) {
       for (size_t i = mstart, j = 0; i != mstart + msize ; ++i, ++j)
-        std::transform(o+j*nsize, o+(j+1)*nsize, data()+nstart+i*ndim_, data()+nstart+i*ndim_,
-                       [&a](DataType p, DataType q){ return q + a*p; });
+        blas::ax_plus_y_n(a, o+j*nsize, nsize, element_ptr(nstart, i));
     }
     void add_block(const DataType a, const int nstart, const int mstart, const int nsize, const int msize, const std::shared_ptr<const Matrix_base<DataType>> o) {
       assert(nsize == o->ndim() && msize == o->mdim());
@@ -227,8 +226,7 @@ class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
     void add_strided_block(const DataType a, const int nstart, const int mstart, const int nsize, const int msize,
                             const int ld, const DataType* o) {
       for (size_t i = mstart, j = 0; i != mstart + msize; ++i, ++j)
-        std::transform(o + j*ld, o + (j+1)*ld, data() + nstart + i*ndim_, data() + nstart + i*ndim_,
-                        [&a] (const DataType& p, const DataType& q) { return q + a*p; });
+        blas::ax_plus_y_n(a, o+j*ld, nsize, element_ptr(nstart, i));
     }
 
     // alias of operator()

@@ -237,14 +237,6 @@ class RASCivector : public std::enable_shared_from_this<RASCivector<DataType>> {
       return out;
     }
 
-#if 0
-    // When the Determinants structures are identical. Used in most cases.
-    DataType dot_product(const RASCivector<DataType>& o) const {
-      assert( (*det_) == (*o.det_) );
-      return std::inner_product(data_.get(), data_.get() + size_, o.data(), 0.0);
-    }
-#endif
-
     // Safe for any structure of blocks. Used only in MEH.
     DataType dot_product(const RASCivector<DataType>& o) const {
       assert( det_->nelea() == o.det()->nelea() && det_->neleb() == o.det()->neleb() && det_->norb() == o.det()->norb() );
@@ -254,7 +246,7 @@ class RASCivector : public std::enable_shared_from_this<RASCivector<DataType>> {
         std::shared_ptr<const RBlock> jblock = o.block(iblock->stringb(), iblock->stringa());
         if (!jblock) continue;
 
-        out += std::inner_product(iblock->data(), iblock->data() + iblock->lena()*iblock->lenb(), jblock->data(), 0.0);
+        out += blas::dot_product(iblock->data(), iblock->lena()*iblock->lenb(), jblock->data());
       }
 
       return out;
@@ -265,8 +257,7 @@ class RASCivector : public std::enable_shared_from_this<RASCivector<DataType>> {
 
     void set_det(std::shared_ptr<const RASDeterminants> det) { det_ = det; }
     void scale(const DataType a) { std::for_each( data(), data() + size_, [&a] (DataType& p) { p *= a; } ); }
-    void ax_plus_y(const DataType a, const RASCivector<DataType>& o)
-      { std::transform( o.data(), o.data() + size_, data(), data(), [&a] (DataType p, DataType q) { return (a*p + q); } ); }
+    void ax_plus_y(const DataType a, const RASCivector<DataType>& o) { blas::ax_plus_y_n(a, o.data(), size_, data()); }
     void ax_plus_y(const DataType a, std::shared_ptr<const RASCivector<DataType>> o) { ax_plus_y(a, *o); }
 
     // Spin functions are only implememted as specialized functions for double (see civec.cc)
@@ -333,7 +324,7 @@ class RASCivector : public std::enable_shared_from_this<RASCivector<DataType>> {
             if (condition(tabit)) { // Also sets bit appropriately
               DataType* targetdata = tarblock->data() + tarblock->stringa()->template lexical<0>(tabit) * lb;
               const DataType sign = static_cast<DataType>(sdet->sign<0>(abit, orbital));
-              std::transform(sourcedata, sourcedata + lb, targetdata, targetdata, [&sign] (DataType p, DataType q) { return p*sign + q; });
+              blas::ax_plus_y_n(sign, sourcedata, lb, targetdata);
             }
             sourcedata += lb;
           }
