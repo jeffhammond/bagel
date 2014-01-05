@@ -26,6 +26,9 @@
 #ifndef __SRC_MATH_BTAS_INTERFACE_H
 #define __SRC_MATH_BTAS_INTERFACE_H
 
+#define _HAS_CBLAS
+#define _HAS_INTEL_MKL
+
 #include <btas/btas.h>
 #include <btas/tensor.h>
 

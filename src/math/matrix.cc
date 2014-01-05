@@ -103,7 +103,7 @@ Matrix Matrix::operator*(const Matrix& o) const {
   assert(localized_ == o.localized_);
   if (localized_) {
 #endif
-    dgemm_("N", "N", l, n, m, 1.0, data(), l, o.data(), o.ndim_, 0.0, out.data(), l);
+    btas::gemm(CblasNoTrans, CblasNoTrans, 1.0, *this, o, 0.0, out);
 #ifdef HAVE_SCALAPACK
   } else {
     unique_ptr<double[]> locala = getlocal();
@@ -161,7 +161,7 @@ Matrix Matrix::operator%(const Matrix& o) const {
   assert(localized_ == o.localized_);
   if (localized_) {
 #endif
-    dgemm_("T", "N", l, n, m, 1.0, data(), m, o.data(), o.ndim_, 0.0, out.data(), l);
+    btas::gemm(CblasTrans, CblasNoTrans, 1.0, *this, o, 0.0, out);
 #ifdef HAVE_SCALAPACK
   } else {
     unique_ptr<double[]> locala = getlocal();
@@ -188,7 +188,7 @@ Matrix Matrix::operator^(const Matrix& o) const {
   assert(localized_ == o.localized_);
   if (localized_) {
 #endif
-    dgemm_("N", "T", l, n, m, 1.0, data(), ndim_, o.data(), o.ndim_, 0.0, out.data(), l);
+    btas::gemm(CblasNoTrans, CblasTrans, 1.0, *this, o, 0.0, out);
 #ifdef HAVE_SCALAPACK
   } else {
     unique_ptr<double[]> locala = getlocal();

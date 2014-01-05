@@ -106,7 +106,7 @@ ZMatrix ZMatrix::operator*(const ZMatrix& o) const {
   assert(localized_ == o.localized_);
   if (localized_) {
 #endif
-    zgemm3m_("N", "N", l, n, m, 1.0, data(), l, o.data(), o.ndim_, 0.0, out.data(), l);
+    btas::gemm(CblasNoTrans, CblasNoTrans, complex<double>(1.0), *this, o, complex<double>(0.0), out);
 #ifdef HAVE_SCALAPACK
   } else {
     unique_ptr<complex<double>[]> locala = getlocal();
@@ -164,7 +164,7 @@ ZMatrix ZMatrix::operator%(const ZMatrix& o) const {
   assert(localized_ == o.localized_);
   if (localized_) {
 #endif
-    zgemm3m_("C", "N", l, n, m, 1.0, data(), m, o.data(), o.ndim_, 0.0, out.data(), l);
+    btas::gemm(CblasConjTrans, CblasNoTrans, complex<double>(1.0), *this, o, complex<double>(0.0), out);
 #ifdef HAVE_SCALAPACK
   } else {
     unique_ptr<complex<double>[]> locala = getlocal();
@@ -190,7 +190,7 @@ ZMatrix ZMatrix::operator^(const ZMatrix& o) const {
   assert(localized_ == o.localized_);
   if (localized_) {
 #endif
-    zgemm3m_("N", "C", l, n, m, 1.0, data(), ndim_, o.data(), o.ndim_, 0.0, out.data(), l);
+    btas::gemm(CblasNoTrans, CblasConjTrans, complex<double>(1.0), *this, o, complex<double>(0.0), out);
 #ifdef HAVE_SCALAPACK
   } else {
     unique_ptr<complex<double>[]> locala = getlocal();
