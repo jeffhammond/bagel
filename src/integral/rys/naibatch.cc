@@ -1,7 +1,7 @@
 //
 // BAGEL - Parallel electron correlation program.
-// Filename: lexical_cast.h
-// Copyright (C) 2013 Toru Shiozaki
+// Filename: naibatch.cc
+// Copyright (C) 2009 Toru Shiozaki
 //
 // Author: Toru Shiozaki <shiozaki@northwestern.edu>
 // Maintainer: Shiozaki group
@@ -23,21 +23,24 @@
 // the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 //
 
-// Degraded version of lexical_cast.
+#include <src/integral/rys/naibatch.h>
 
-#ifndef __SRC_UTIL_LEXICAL_CAST
-#define __SRC_UTIL_LEXICAL_CAST
+using namespace std;
+using namespace bagel;
 
-#include <sstream>
 
-namespace bagel {
-template<typename T, typename U> T lexical_cast(U in) {
-  std::stringstream ss;
-  ss << in;
-  T out;
-  ss >> out;
-  return out;
-}
+NAIBatch::NAIBatch(const array<shared_ptr<const Shell>,2>& _info, const shared_ptr<const Molecule> mol, shared_ptr<StackMem> stack)
+  : CoulombBatch_energy(_info, mol, stack) {
+  const double integral_thresh = PRIM_SCREEN_THRESH;
+  compute_ssss(integral_thresh);
+  root_weight(primsize_*natom_);
 }
 
-#endif
+
+NAIBatch::NAIBatch(const array<shared_ptr<const Shell>,2>& _info, const shared_ptr<const Molecule> mol, const int L, const double A)
+  : CoulombBatch_energy (_info, mol, L, A) {
+  const double integral_thresh = PRIM_SCREEN_THRESH;
+  compute_ssss(integral_thresh);
+  root_weight(primsize_*natom_);
+}
+

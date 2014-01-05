@@ -26,27 +26,16 @@
 #ifndef __SRC_INTEGRAL_RYS_NAIBATCH_H
 #define __SRC_INTEGRAL_RYS_NAIBATCH_H
 
-#include <src/integral/rys/naibatch_base.h>
+#include <src/integral/rys/coulombbatch_energy.h>
 
 namespace bagel {
 
-class NAIBatch : public NAIBatch_base {
-
-  protected:
-
+class NAIBatch : public CoulombBatch_energy {
   public:
+    NAIBatch(const std::array<std::shared_ptr<const Shell>,2>& _info, const std::shared_ptr<const Molecule> mol,
+             std::shared_ptr<StackMem> stack = std::shared_ptr<StackMem>());
 
-    NAIBatch(const std::array<std::shared_ptr<const Shell>,2>& _info, const std::shared_ptr<const Molecule> mol, std::shared_ptr<StackMem> stack = std::shared_ptr<StackMem>())
-      :  NAIBatch_base(_info, mol, 0, stack, 0, 0.0) {};
-
-    NAIBatch(const std::array<std::shared_ptr<const Shell>,2>& _info, const std::shared_ptr<const Molecule> mol, const int L, const double A = 0.0)
-      :  NAIBatch_base(_info, mol, 0, std::shared_ptr<StackMem>(), L, A) {};
-     ~NAIBatch() {};
-
-    /// compute a batch of integrals
-    void compute() override;
-
-    constexpr static int Nblocks() { return 1; }
+    NAIBatch(const std::array<std::shared_ptr<const Shell>,2>& _info, const std::shared_ptr<const Molecule> mol, const int L, const double A = 0.0);
 };
 
 }

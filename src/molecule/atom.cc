@@ -36,18 +36,17 @@ static const AtomMap atommap_;
 
 Atom::Atom(shared_ptr<const PTree> inp, const bool spherical, const bool angstrom, const pair<string, shared_ptr<const PTree>> defbas, std::shared_ptr<const PTree> elem, const bool aux)
 : spherical_(spherical), basis_(inp->get<string>(!aux ? "basis" : "df_basis", defbas.first)) {
-  name_ = inp->get<string>("atom");
-  transform(name_.begin(), name_.end(), name_.begin(), ::tolower);
+  name_ = to_lower(inp->get<string>("atom"));
 
   if (elem)
     for (auto& i : *elem) {
-      string key = i->key();
-      transform(key.begin(), key.end(), key.begin(), ::tolower);
+      const string key = to_lower(i->key());
       if (name_ == key) basis_ = i->data();
     }
   atom_number_ = atommap_.atom_number(name_);
 
   position_ = inp->get_array<double,3>("xyz");
+
   for (auto& i : position_) i *= angstrom ? ang2bohr__ : 1.0;
 
   if (name_ == "q") {
@@ -73,8 +72,7 @@ Atom::Atom(const Atom& old, const bool spherical, const string bas, const pair<s
   } else {
     if (elem)
       for (auto& i : *elem) {
-        string key = i->key();
-        transform(key.begin(), key.end(), key.begin(), ::tolower);
+        const string key = to_lower(i->key());
         if (name_ == key) basis_ = i->data();
       }
     string na = name_;
@@ -111,8 +109,18 @@ void Atom::basis_init(shared_ptr<const PTree> basis) {
   }
   construct_shells(basis_info);
   common_init();
-}
 
+#if 0
+  // ECP initialization
+  // FIXME - for mulitple zeta's
+  // zeta
+  ecp_[0] = -0.05;
+  // weight
+  ecp_[1] = 1.0;
+#else
+  fill(ecp_.begin(), ecp_.end(), 0.0);
+#endif
+}
 
 Atom::Atom(const Atom& old, const array<double, 3>& displacement)
 : spherical_(old.spherical_), name_(old.name()), atom_number_(old.atom_number()), atom_charge_(old.atom_charge()), atom_exponent_(old.atom_exponent()),
@@ -143,8 +151,7 @@ Atom::Atom(const bool sph, const string nm, const array<double,3>& p, const stri
 
   if (elem)
     for (auto& i : *elem) {
-      string key = i->key();
-      transform(key.begin(), key.end(), key.begin(), ::tolower);
+      const string key = to_lower(i->key());
       if (name_ == key) basis_ = i->data();
     }
   string na = name_;
@@ -318,7 +325,7 @@ void Atom::print_basis() const {
 
 void Atom::print() const {
   string tmp = name_;
-  tmp[0] = ::toupper(tmp[0]);
+  tmp[0] = toupper(tmp[0]);
   cout << "  { \"atom\" : \"" << tmp << "\", \"xyz\" : [" << fixed << setprecision(6) <<
       setw(14) << position_[0] << "," <<
       setw(14) << position_[1] << "," <<
