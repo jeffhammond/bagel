@@ -287,11 +287,11 @@ class DFFullDist : public ParallelDF {
     // special function for RHF
     std::shared_ptr<DFFullDist> apply_closed_2RDM(const double scale_ex = 1.0) const;
     // special function for UHF
-    std::shared_ptr<DFFullDist> apply_uhf_2RDM(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdma, std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdmb) const;
+    std::shared_ptr<DFFullDist> apply_uhf_2RDM(std::shared_ptr<const btas::Tensor2<double>> rdma, std::shared_ptr<const btas::Tensor2<double>> rdmb) const;
     // general case with closed orbitals
-    std::shared_ptr<DFFullDist> apply_2rdm(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm, std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm1, const int nclosed, const int nact) const;
+    std::shared_ptr<DFFullDist> apply_2rdm(std::shared_ptr<const btas::Tensor4<double>> rdm, std::shared_ptr<const btas::Tensor2<double>> rdm1, const int nclosed, const int nact) const;
     // general case without closed orbitals
-    std::shared_ptr<DFFullDist> apply_2rdm(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm) const;
+    std::shared_ptr<DFFullDist> apply_2rdm(std::shared_ptr<const btas::Tensor4<double>> rdm) const;
 
     std::shared_ptr<Matrix> form_4index_1fixed(const std::shared_ptr<const DFFullDist> o, const double a, const size_t n) const;
 

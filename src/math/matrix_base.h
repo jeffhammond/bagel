@@ -34,15 +34,14 @@
 #include <src/parallel/scalapack.h>
 #include <src/parallel/mpi_interface.h>
 
-#include <btas/tensor.h>
-#include <btas/btas.h>
+#include <src/math/btas_interface.h>
 
 namespace bagel {
 
 template<typename DataType>
-class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
+class Matrix_base : public btas::Tensor2<DataType> {
   public:
-    using btas::Tensor<DataType,CblasColMajor>::data;
+    using btas::Tensor2<DataType>::data;
 
   protected:
     const size_t ndim_;
@@ -145,7 +144,7 @@ class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
 
 
   public:
-    Matrix_base(const size_t n, const size_t m, const bool local = false) : btas::Tensor<DataType,CblasColMajor>(n, m), ndim_(n), mdim_(m), localized_(local) {
+    Matrix_base(const size_t n, const size_t m, const bool local = false) : btas::Tensor2<DataType>(n, m), ndim_(n), mdim_(m), localized_(local) {
 #ifdef HAVE_SCALAPACK
       if (!localized_) {
         desc_ = mpi__->descinit(ndim_, mdim_);
@@ -155,7 +154,7 @@ class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
       zero();
     }
 
-    Matrix_base(const Matrix_base<DataType>& o) : btas::Tensor<DataType,CblasColMajor>(o.ndim_, o.mdim_), ndim_(o.ndim_), mdim_(o.mdim_), localized_(o.localized_) {
+    Matrix_base(const Matrix_base<DataType>& o) : btas::Tensor2<DataType>(o.ndim_, o.mdim_), ndim_(o.ndim_), mdim_(o.mdim_), localized_(o.localized_) {
 #ifdef HAVE_SCALAPACK
       if (!localized_) {
         desc_ = mpi__->descinit(ndim_, mdim_);
@@ -165,7 +164,7 @@ class Matrix_base : public btas::Tensor<DataType,CblasColMajor> {
       std::copy_n(o.data(), size(), data());
     }
 
-    Matrix_base(Matrix_base<DataType>&& o) : btas::Tensor<DataType,CblasColMajor>(std::forward<Matrix_base<DataType>>(o)), ndim_(o.ndim_), mdim_(o.mdim_), localized_(o.localized_) {
+    Matrix_base(Matrix_base<DataType>&& o) : btas::Tensor2<DataType>(std::forward<Matrix_base<DataType>>(o)), ndim_(o.ndim_), mdim_(o.mdim_), localized_(o.localized_) {
 #ifdef HAVE_SCALAPACK
       if (!localized_) {
         desc_ = mpi__->descinit(ndim_, mdim_);

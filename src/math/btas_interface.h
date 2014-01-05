@@ -1,7 +1,7 @@
 //
 // BAGEL - Parallel electron correlation program.
-// Filename: jvec.h
-// Copyright (C) 2012 Toru Shiozaki
+// Filename: btas_interface.h
+// Copyright (C) 2013 Toru Shiozaki
 //
 // Author: Toru Shiozaki <shiozaki@northwestern.edu>
 // Maintainer: Shiozaki group
@@ -23,30 +23,24 @@
 // the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 //
 
+#ifndef __SRC_MATH_BTAS_INTERFACE_H
+#define __SRC_MATH_BTAS_INTERFACE_H
 
-#ifndef __BAGEL_SRC_CASSCF_JVEC_H
-#define __BAGEL_SRC_CASSCF_JVEC_H
+#include <btas/btas.h>
+#include <btas/tensor.h>
 
-#include <src/fci/fci.h>
-#include <src/scf/coeff.h>
+namespace btas {
+  template<typename T>
+  using Tensor1 = Tensor<T, RangeNd<CblasColMajor, std::array<long,1>>, std::vector<T>>;
+  template<typename T>
+  using Tensor2 = Tensor<T, RangeNd<CblasColMajor, std::array<long,2>>, std::vector<T>>;
+  template<typename T>
+  using Tensor3 = Tensor<T, RangeNd<CblasColMajor, std::array<long,3>>, std::vector<T>>;
+  template<typename T>
+  using Tensor4 = Tensor<T, RangeNd<CblasColMajor, std::array<long,4>>, std::vector<T>>;
 
-namespace bagel {
-
-class Jvec {
-  protected:
-    std::shared_ptr<const DFHalfDist> half_;
-    std::shared_ptr<const DFFullDist> jvec_;
-    std::shared_ptr<btas::Tensor4<double>> rdm2all_;
-
-  public:
-    Jvec(std::shared_ptr<FCI> fci, std::shared_ptr<const Coeff> c, const size_t, const size_t, const size_t);
-
-    const std::shared_ptr<const DFHalfDist> half() const { return half_; }
-    const std::shared_ptr<const DFFullDist> jvec() const { return jvec_; }
-    std::shared_ptr<const btas::Tensor4<double>> rdm2_all() const { return rdm2all_; }
-
-};
-
+  template<typename T, int N>
+  using TensorN = Tensor<T, RangeNd<CblasColMajor, std::array<long,N>>, std::vector<T>>;
 }
 
 #endif

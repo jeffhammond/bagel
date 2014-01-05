@@ -47,7 +47,7 @@ Jvec::Jvec(shared_ptr<FCI> fci, shared_ptr<const Coeff> coeff, const size_t nclo
 
     // TODO this is not a very efficient implementation, obviously
     // for the time being, I form the entire 2RDM
-    rdm2all_ = std::make_shared<btas::Tensor<double,CblasColMajor>>(nocc,nocc,nocc,nocc);
+    rdm2all_ = std::make_shared<btas::Tensor4<double>>(btas::Range(btas::Range1(nocc),4));
     fill(rdm2all_->begin(), rdm2all_->end(), 0.0);
     {
       // closed-closed

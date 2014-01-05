@@ -80,7 +80,7 @@ Matrix& Matrix::operator-=(const Matrix& o) {
 
 
 Matrix& Matrix::operator=(const Matrix& o) {
-  btas::Tensor<double,CblasColMajor>::operator=(o);
+  btas::Tensor2<double>::operator=(o);
   return *this;
 }
 

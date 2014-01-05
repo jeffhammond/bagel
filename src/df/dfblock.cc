@@ -36,7 +36,7 @@ using namespace std;
 
 DFBlock::DFBlock(std::shared_ptr<const StaticDist> adist_shell, std::shared_ptr<const StaticDist> adist,
                  const size_t a, const size_t b1, const size_t b2, const int as, const int b1s, const int b2s, const bool averaged)
- : btas::Tensor<double,CblasColMajor>(max(adist_shell->size(mpi__->rank()), max(adist->size(mpi__->rank()), a)), b1, b2),
+ : btas::Tensor3<double>(max(adist_shell->size(mpi__->rank()), max(adist->size(mpi__->rank()), a)), b1, b2),
    adist_shell_(adist_shell), adist_(adist), averaged_(averaged), asize_(a), b1size_(b1), b2size_(b2), astart_(as), b1start_(b1s), b2start_(b2s) {
 
   assert(asize_ == adist_shell->size(mpi__->rank()) || asize_ == adist_->size(mpi__->rank()) || asize_ == adist_->nele());
@@ -44,11 +44,11 @@ DFBlock::DFBlock(std::shared_ptr<const StaticDist> adist_shell, std::shared_ptr<
 
 
 DFBlock::DFBlock(const DFBlock& o)
- : btas::Tensor<double,CblasColMajor>(max(o.adist_shell_->size(mpi__->rank()), max(o.adist_->size(mpi__->rank()), o.asize_)), o.b1size_, o.b2size_),
+ : btas::Tensor3<double>(max(o.adist_shell_->size(mpi__->rank()), max(o.adist_->size(mpi__->rank()), o.asize_)), o.b1size_, o.b2size_),
    adist_shell_(o.adist_shell_), adist_(o.adist_), averaged_(o.averaged_), asize_(o.asize_), b1size_(o.b1size_), b2size_(o.b2size_),
    astart_(o.astart_), b1start_(o.b1start_), b2start_(o.b2start_) {
 
-  btas::Tensor<double,CblasColMajor>::operator=(o);
+  btas::Tensor3<double>::operator=(o);
 }
 
 
@@ -239,7 +239,10 @@ shared_ptr<DFBlock> DFBlock::transform_third(std::shared_ptr<const Matrix> cmat,
   assert(b2start_ == 0);
   auto out = make_shared<DFBlock>(adist_shell_, adist_, asize_, b1size_, nocc, astart_, b1start_, 0, averaged_);
 
-  btas::gemm(CblasColMajor, CblasNoTrans, (trans ? CblasTrans : CblasNoTrans), 1.0, *this, *cmat, 0.0, *out);
+  if (!trans)
+    dgemm_("N", "N", asize_*b1size_, nocc, b2size_, 1.0, data(), asize_*b1size_, cmat->data(), b2size_, 0.0, out->data(), asize_*b1size_);
+  else  // trans -> back transform
+    dgemm_("N", "T", asize_*b1size_, nocc, b2size_, 1.0, data(), asize_*b1size_, cmat->data(), nocc, 0.0, out->data(), asize_*b1size_);
 
   return out;
 }
@@ -304,7 +307,7 @@ shared_ptr<DFBlock> DFBlock::apply_rhf_2RDM(const double scale_exch) const {
 // Caution
 //   o strictly assuming that we are using natural orbitals.
 //
-shared_ptr<DFBlock> DFBlock::apply_uhf_2RDM(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> amat, std::shared_ptr<const btas::Tensor<double,CblasColMajor>> bmat) const {
+shared_ptr<DFBlock> DFBlock::apply_uhf_2RDM(std::shared_ptr<const btas::Tensor2<double>> amat, std::shared_ptr<const btas::Tensor2<double>> bmat) const {
   assert(b1size_ == b2size_);
   const int nocc = b1size_;
   shared_ptr<DFBlock> out = clone();
@@ -333,7 +336,7 @@ shared_ptr<DFBlock> DFBlock::apply_uhf_2RDM(std::shared_ptr<const btas::Tensor<d
 
 
 
-shared_ptr<DFBlock> DFBlock::apply_2RDM(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm, std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm1, const int nclosed, const int nact) const {
+shared_ptr<DFBlock> DFBlock::apply_2RDM(std::shared_ptr<const btas::Tensor4<double>> rdm, std::shared_ptr<const btas::Tensor2<double>> rdm1, const int nclosed, const int nact) const {
   assert(nclosed+nact == b1size_ && b1size_ == b2size_);
   // checking if natural orbitals...
   {
@@ -394,7 +397,7 @@ shared_ptr<DFBlock> DFBlock::apply_2RDM(std::shared_ptr<const btas::Tensor<doubl
 }
 
 
-shared_ptr<DFBlock> DFBlock::apply_2RDM(std::shared_ptr<const btas::Tensor<double,CblasColMajor>> rdm) const {
+shared_ptr<DFBlock> DFBlock::apply_2RDM(std::shared_ptr<const btas::Tensor4<double>> rdm) const {
   shared_ptr<DFBlock> out = clone();
   dgemm_("N", "T", asize_, b1size_*b2size_, b1size_*b2size_, 1.0, data(), asize_, rdm->data(), b1size_*b2size_, 0.0, out->data(), asize_);
   return out;

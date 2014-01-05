@@ -90,7 +90,7 @@ ZMatrix& ZMatrix::operator-=(const ZMatrix& o) {
 
 
 ZMatrix& ZMatrix::operator=(const ZMatrix& o) {
-  btas::Tensor<complex<double>,CblasColMajor>::operator=(o);
+  btas::Tensor2<complex<double>>::operator=(o);
   return *this;
 }
 

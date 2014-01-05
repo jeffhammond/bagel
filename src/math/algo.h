@@ -54,6 +54,11 @@ namespace {
   template<> double real(const std::complex<double>& a) { return a.real(); }
 
   // real function
+  template<typename T> double imag(const T& a) { throw std::logic_error("detail::imag"); }
+  template<> double imag(const double& a) { return 0; }
+  template<> double imag(const std::complex<double>& a) { return a.imag(); }
+
+  // real function
   template<bool S, typename T, typename U>
   struct make_complex_impl { };
   template<typename T, typename U>

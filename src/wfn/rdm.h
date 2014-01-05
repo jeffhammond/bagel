@@ -35,31 +35,31 @@
 
 namespace bagel {
 
-template<typename DataType>
-class RDM_base : public btas::Tensor<DataType,CblasColMajor> {
+template<int rank, typename DataType>
+class RDM_base : public btas::TensorN<DataType,rank*2> {
   protected:
     const int norb_;
 
   public:
-    RDM_base(const int n, const int rank) : btas::Tensor<DataType,CblasColMajor>(std::vector<unsigned long>(rank*2, n)), norb_(n) {
+    RDM_base(const int n) : btas::TensorN<DataType,rank*2>(btas::Range(btas::Range1(n), rank*2)), norb_(n) {
       zero();
     }
 
-    RDM_base(const RDM_base<DataType>& o) : btas::Tensor<DataType,CblasColMajor>(o), norb_(o.norb_) {
+    RDM_base(const RDM_base<rank, DataType>& o) : btas::TensorN<DataType,rank*2>(o), norb_(o.norb_) {
     }
 
-    RDM_base(RDM_base<DataType>&& o) = default;
+    RDM_base(RDM_base<rank, DataType>&& o) = default;
 
     // TODO in principle we should be able to get rid of the data() functions
     DataType* data() { return &(*this->begin()); }
     const DataType* data() const { return &(*this->cbegin()); }
 
-    using btas::Tensor<DataType,CblasColMajor>::begin;
-    using btas::Tensor<DataType,CblasColMajor>::end;
+    using btas::TensorN<DataType, rank*2>::begin;
+    using btas::TensorN<DataType, rank*2>::end;
 
     void zero() { std::fill(begin(), end(), static_cast<DataType>(0.0)); }
-    void ax_plus_y(const DataType a, const RDM_base<DataType>& o) { btas::axpy(a, o, *this); }
-    void ax_plus_y(const DataType& a, const std::shared_ptr<RDM_base<DataType>>& o) { this->ax_plus_y(a, *o); }
+    void ax_plus_y(const DataType a, const RDM_base<rank, DataType>& o) { btas::axpy(a, o, *this); }
+    void ax_plus_y(const DataType& a, const std::shared_ptr<RDM_base<rank, DataType>>& o) { this->ax_plus_y(a, *o); }
     void scale(const DataType& a) { btas::scal(a, *this); }
 
     int norb() const { return norb_; }
@@ -68,11 +68,11 @@ class RDM_base : public btas::Tensor<DataType,CblasColMajor> {
 
 
 template <int rank, typename DataType = double>
-class RDM : public RDM_base<DataType> {
+class RDM : public RDM_base<rank, DataType> {
   public:
-    RDM(const int n) : RDM_base<DataType>(n, rank) { }
-    RDM(const RDM<rank,DataType>& o) : RDM_base<DataType>(o) { }
-    RDM(RDM<rank,DataType>&& o) : RDM_base<DataType>(std::forward(o)) { }
+    RDM(const int n) : RDM_base<rank, DataType>(n) { }
+    RDM(const RDM<rank,DataType>& o) : RDM_base<rank, DataType>(o) { }
+    RDM(RDM<rank,DataType>&& o) : RDM_base<rank, DataType>(std::forward(o)) { }
 
     std::shared_ptr<RDM<rank,DataType>> clone() const { return std::make_shared<RDM<rank,DataType>>(this->norb_); }
     std::shared_ptr<RDM<rank,DataType>> copy() const { return std::make_shared<RDM<rank,DataType>>(*this); }
@@ -87,6 +87,18 @@ class RDM : public RDM_base<DataType> {
     bool natural_orbitals() const {
       throw std::logic_error("RDM<N>::natural_orbitals() should not be called with N>1");
       return true;
+    }
+
+    std::shared_ptr<RDM<rank, double>> get_real_part() const {
+      auto out = std::make_shared<RDM<rank, double>>(this->norb_);
+      std::transform(this->begin(), this->end(), out->begin(), [](const std::complex<double>& a){ return detail::real(a); });
+      return out;
+    }
+
+    std::shared_ptr<RDM<rank, double>> get_imag_part() const {
+      auto out = std::make_shared<RDM<rank, double>>(this->norb_);
+      std::transform(this->begin(), this->end(), out->begin(), [](const std::complex<double>& a){ return detail::imag(a); });
+      return out;
     }
 
     std::shared_ptr<Matrix> rdm1_mat(const int nclosed, const bool all = true) const {
