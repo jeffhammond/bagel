@@ -90,10 +90,9 @@ vector<double> RDM<1>::diag() const {
 
 template<>
 void RDM<1>::transform(const shared_ptr<Matrix>& coeff) {
-  const double* start = coeff->data();
-  unique_ptr<double[]> buf(new double[size()]);
-  dgemm_("N", "N", norb_, norb_, norb_, 1.0, data(), norb_, start, norb_, 0.0, buf.get(), norb_);
-  dgemm_("T", "N", norb_, norb_, norb_, 1.0, start, norb_, buf.get(), norb_, 0.0, data(), norb_);
+  auto tmp = this->clone();
+  btas::gemm(CblasNoTrans, CblasNoTrans, 1.0, *this, *coeff, 0.0, *tmp);
+  btas::gemm(CblasTrans, CblasNoTrans, 1.0, *coeff, *tmp, 0.0, *this);
 }
 
 

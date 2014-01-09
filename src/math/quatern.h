@@ -42,11 +42,7 @@ namespace bagel {
 template<typename T>
 class Quatern {
   protected:
-#if __GNUC__ == 4 && __GNUC_MINOR__ <= 7
-    std::array<T, 4>__attribute__((aligned(32))) data_; // TODO deprecated
-#else
     alignas(32) std::array<T, 4> data_;
-#endif
 
   public:
     Quatern(std::array<T, 4> i) : data_(i) {}
