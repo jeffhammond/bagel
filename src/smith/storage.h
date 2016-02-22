@@ -91,8 +91,9 @@ namespace {
 template<typename DataType>
 class StorageIncore {
   protected:
-    // Global Array handler:
-    int ga_;
+    // Distributed array handle:
+    MPI_Win win_;
+    void *  win_base_;
     int64_t totalsize_;
 
     // this relates hash keys to lo and high of the block

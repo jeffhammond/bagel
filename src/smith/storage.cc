@@ -77,12 +77,24 @@ StorageIncore<DataType>::StorageIncore(const map<size_t, size_t>& size, bool ini
 template<typename DataType>
 void StorageIncore<DataType>::initialize() {
   assert(!initialized_);
-  // create GA
-  auto type = is_same<double,DataType>::value ? MT_C_DBL : MT_C_DCPL;
+  // create MPI window
+  //auto type = is_same<double,DataType>::value ? MT_C_DBL : MT_C_DCPL;
+  // some implementations of MPI may not provide MPI_CXX_DOUBLE_COMPLEX, which is part of MPI-3
+  // see https://github.com/solomonik/ctf/issues/10 for discussion
+#if MPI_VERSION >= 3
+  auto type = is_same<double,DataType>::value ? MPI_DOUBLE : MPI_CXX_DOUBLE_COMPLEX;
+#else
+  auto type = is_same<double,DataType>::value ? MPI_DOUBLE : MPI_C_DOUBLE_COMPLEX;
+#endif
   int64_t nblocks = blocks_.size() - 1;
   assert(nblocks <= mpi__->size());
-  ga_ = NGA_Create_irreg64(type, 1, &totalsize_, const_cast<char*>(""), &nblocks, blocks_.data());
-
+  //ga_ = NGA_Create_irreg64(type, 1, &totalsize_, const_cast<char*>(""), &nblocks, blocks_.data());
+  // TODO need a hash function or something like that to map blocks to processes,
+  // since that was opaque in GA but is not in MPI-3...
+  MPI_Aint size;
+  MPI_Info info = MPI_INFO_NULL;  // some info keys may be useful.  do this later.
+  MPI_Comm comm = MPI_COMM_WORLD; // hopefully Bagel creates its own communicator.
+  MPI_Win_allocate(size,1 info, comm, &win_base_, &win_);
   initialized_ = true;
   zero();
 }
@@ -90,7 +102,10 @@ void StorageIncore<DataType>::initialize() {
 
 template<typename DataType>
 StorageIncore<DataType>::~StorageIncore() {
-  GA_Destroy(ga_);
+  //GA_Destroy(ga_);
+  // This deallocates memory if MPI_Win_allocate is used;
+  // if we use MPI_Win_create, we need MPI_Win_free and MPI_Free_mem.
+  MPI_Win_free(&win_);
 }
 
 
@@ -105,6 +120,7 @@ unique_ptr<DataType[]> StorageIncore<DataType>::get_block_(const size_t& key) co
   int64_t size = p.second - p.first + 1;
   unique_ptr<DataType[]> out(new DataType[size]);
   NGA_Get64(ga_, &p.first, &p.second, out.get(), &size);
+  // MPI_Get
   return move(out);
 }
 
@@ -118,6 +134,7 @@ void StorageIncore<DataType>::put_block_(const unique_ptr<DataType[]>& dat, cons
   auto p = hash->second;
   int64_t size = p.second - p.first + 1;
   NGA_Put64(ga_, &p.first, &p.second, dat.get(), &size);
+  // MPI_Put
 }
 
 
@@ -131,6 +148,7 @@ void StorageIncore<DataType>::add_block_(const unique_ptr<DataType[]>& dat, cons
   int64_t size = p.second - p.first + 1;
   DataType one = 1.0;
   NGA_Acc64(ga_, &p.first, &p.second, dat.get(), &size, &one);
+  // MPI_Acc
 }
 
 
@@ -323,6 +341,7 @@ bool StorageIncore<DataType>::is_local(const size_t key) const {
   assert(iter != hashtable_.end());
   int64_t lo = iter->second.first;
   int64_t nodeid = NGA_Nodeid();
+  // MPI_Comm_split_type
   return (nodeid+1 < blocks_.size()) && (lo >= blocks_[nodeid] && lo < blocks_[nodeid+1]);
 }
 
