@@ -28,7 +28,7 @@ script:
 - env
 - if [ "${TRAVIS_OS_NAME}" = "osx" ] ; then brew install autoconf automake libtool ; fi
 - if [ "${TRAVIS_OS_NAME}" = "osx" ] && [ "${CC}" = "gcc" ] ; then brew install gcc6 && export CC=gcc-6 CXX=g++-6 ; fi
-- if [ "${TRAVIS_OS_NAME}" = "osx" ] && [ "${CC}" = "clang" ] ; then brew install llvm38 && export CC=clang-3.8 CXX=clang-3.8 ; fi
+- if [ "${TRAVIS_OS_NAME}" = "osx" ] && [ "${CC}" = "clang" ] ; then brew install llvm38 && export CC=clang-3.8 CXX=clang++-3.8 ; fi
 - if [ "${TRAVIS_OS_NAME}" = "osx" ] ; then brew install homebrew/science/openblas && export LDFLAGS="-L/usr/local/opt/openblas/lib" CPPFLAGS="-I/usr/local/opt/openblas/include" ; fi
 - autoreconf -fiv
 # CPP is a temporary workaround until https://github.com/nubakery/bagel/pull/89 is merged
