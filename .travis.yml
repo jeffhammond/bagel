@@ -1,0 +1,36 @@
+sudo: false
+language: cpp
+#env:
+os:
+- linux
+- osx
+compiler:
+- gcc
+- clang
+#matrix:
+#  allow_failures:
+#  - os: osx
+#    compiler: clang
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    # clang-3.8 comes from this
+    - llvm-toolchain-precise
+    packages:
+    - cmake
+    - gcc-5
+    - g++-5
+    - gfortran-5
+    # This should provide OpenMP
+    - clang-3.8
+script:
+- env
+- if [ "${TRAVIS_OS_NAME}" = "osx" ] && [ "${CC}" = "gcc" ]; then brew install gcc6 && export CC=gcc-6 CXX=g++-6 ; fi
+- if [ "${TRAVIS_OS_NAME}" = "osx" ] && [ "${CC}" = "clang" ]; then brew install llvm38 && export CC=clang-3.8 CXX=clang-3.8 ; fi
+- autoreconf -fiv
+- ./configure
+- make
+after_failure:
+- echo "FAILURE"
+- find . -name config.log -exec cat {} ";"
