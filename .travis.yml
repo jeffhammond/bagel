@@ -31,6 +31,8 @@ script:
 - if [ "${TRAVIS_OS_NAME}" = "osx" ] && [ "${CC}" = "clang" ] ; then brew install llvm38 && export CC=clang-3.8 CXX=clang-3.8 ; fi
 - if [ "${TRAVIS_OS_NAME}" = "osx" ] ; then brew install homebrew/science/openblas && export LDFLAGS="-L/usr/local/opt/openblas/lib" CPPFLAGS="-I/usr/local/opt/openblas/include" ; fi
 - autoreconf -fiv
+# CPP is a temporary workaround until https://github.com/nubakery/bagel/pull/89 is merged
+- export CPP="${CXX} -E"
 - ./configure
 - make
 after_failure:
